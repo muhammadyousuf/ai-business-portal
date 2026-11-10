@@ -1,6 +1,5 @@
-import { botDemoUrl, adminUrl } from "@/lib/links";
 import Link from "next/link";
-import { Bot, Mail, ShieldCheck, Store } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Button } from "@assistflow/shared/ui/button";
 import { Input } from "@assistflow/shared/ui/input";
 import { Label } from "@assistflow/shared/ui/label";
@@ -18,12 +17,6 @@ export default function SignInPage() {
             <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="you@yourbusiness.com" autoComplete="email" /></div>
             <Button className="w-full" type="button" asChild><Link href="/karachi-biryani"><Mail /> Email me a sign-in link</Link></Button>
           </form>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
-          <div className="grid gap-2">
-            <Button variant="outline" className="w-full justify-start" asChild><Link href="/karachi-biryani"><Store /> Open demo business portal (Karachi Biryani House)</Link></Button>
-            <Button variant="outline" className="w-full justify-start" asChild><Link href={adminUrl()}><ShieldCheck /> Open platform admin portal</Link></Button>
-            <Button variant="outline" className="w-full justify-start" asChild><Link href={botDemoUrl("karachi-biryani")}><Bot /> Try the customer chat widget</Link></Button>
-          </div>
           <p className="text-center text-xs text-muted-foreground">New business? <Link href="/" className="font-medium text-brand hover:underline">Start a 14-day trial</Link></p>
         </div>
         <p className="text-xs text-muted-foreground">Demo build. All buttons open sample data; nothing is sent.</p>
