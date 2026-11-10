@@ -1,0 +1,6 @@
+/* App entry stylesheet. Tokens and base styles live in the shared package. */
+@import "@assistflow/shared/styles/globals.css";
+
+/* Tailwind only scans this app by default; include the shared package sources
+   so their utility classes are generated. */
+@source "../../shared/src";

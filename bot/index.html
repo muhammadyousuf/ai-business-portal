@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Karachi Biryani House (playground)</title>
+  <link rel="icon" href="data:," />
+  <style>
+    /* Deliberately plain, generic "customer website" CSS. The widget must look right on top of anything. */
+    body { margin: 0; font-family: Georgia, serif; color: #2a2118; background: #fffdf8; }
+    .bar { background: #111; color: #fff; font: 12px/1.4 system-ui; text-align: center; padding: 6px; }
+    .bar a { color: #fff; }
+    header { display: flex; align-items: center; justify-content: space-between; max-width: 960px; margin: 0 auto; padding: 20px 24px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
+    .logo span { width: 36px; height: 36px; border-radius: 8px; background: #d9471f; color: #fff; display: grid; place-items: center; font-family: system-ui; }
+    nav a { margin-left: 20px; color: inherit; text-decoration: none; }
+    .cta { background: #d9471f; color: #fff; border-radius: 999px; padding: 8px 16px; text-decoration: none; font-family: system-ui; font-size: 14px; }
+    .hero { max-width: 960px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; }
+    .hero h1 { font-size: 40px; line-height: 1.1; margin: 8px 0 12px; }
+    .hero p { color: #6b5d50; font-size: 17px; }
+    .eyebrow { color: #d9471f; font: 600 12px system-ui; letter-spacing: .08em; text-transform: uppercase; }
+    .img { aspect-ratio: 4/3; border-radius: 24px; background: linear-gradient(135deg, #fde68a, #fdba74, #fda4af); }
+    section { max-width: 960px; margin: 0 auto; padding: 24px; }
+    h2 { font-size: 26px; margin: 0 0 4px; }
+    .note { color: #6b5d50; font-size: 14px; margin: 0 0 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .card h3 { margin: 0 0 8px; font-size: 16px; }
+    .card div { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1ece4; font-size: 14px; }
+    .card div:last-child { border: 0; }
+    .zones span { display: inline-block; background: #fff; border-radius: 999px; padding: 6px 12px; margin: 4px 6px 4px 0; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    footer { max-width: 960px; margin: 0 auto; padding: 40px 24px; color: #6b5d50; font-size: 14px; }
+    @media (max-width: 720px) { .hero, .grid { grid-template-columns: 1fr; } nav { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="bar">Playground: a plain HTML "customer website" with the AssistFlow widget installed. Needs the backend on <a href="http://localhost:4000/health">localhost:4000</a>.</div>
+  <header>
+    <div class="logo"><span>K</span> Karachi Biryani House</div>
+    <nav><a href="#menu">Menu</a><a href="#delivery">Delivery</a><a href="#contact">Contact</a></nav>
+    <a class="cta" href="tel:+923001234567">Call to order</a>
+  </header>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Since 1998 · Gulshan-e-Maymar</div>
+      <h1>Karachi's biryani, delivered hot to your door.</h1>
+      <p>Sindhi biryani, charcoal BBQ and karahi. Open daily 12:00 to 23:30. Delivery across Gulshan, Johar and North Nazimabad.</p>
+    </div>
+    <div class="img"></div>
+  </div>
+  <section id="menu">
+    <h2>Menu</h2>
+    <p class="note">The chat assistant reads prices from the same data, so it is never out of date.</p>
+    <div class="grid">
+      <div class="card"><h3>Biryani</h3><div><span>Chicken Biryani</span><b>Rs. 350</b></div><div><span>Beef Biryani</span><b>Rs. 420</b></div><div><span>Mutton Biryani</span><b>Rs. 650</b></div><div><span style="text-decoration:line-through">Prawn Biryani</span><b>Rs. 780</b></div></div>
+      <div class="card"><h3>BBQ &amp; Karahi</h3><div><span>Chicken Tikka (half)</span><b>Rs. 480</b></div><div><span>Beef Seekh Kabab (4 pcs)</span><b>Rs. 520</b></div><div><span>Chicken Karahi (half kg)</span><b>Rs. 1,450</b></div><div><span>Mutton Karahi</span><b>Rs. 2,600</b></div></div>
+      <div class="card"><h3>Sides</h3><div><span>Naan</span><b>Rs. 40</b></div><div><span>Raita</span><b>Rs. 60</b></div><div><span>Fresh Salad</span><b>Rs. 80</b></div></div>
+      <div class="card"><h3>Drinks &amp; Desserts</h3><div><span>Soft Drink (1.5L)</span><b>Rs. 180</b></div><div><span>Kheer</span><b>Rs. 150</b></div></div>
+    </div>
+  </section>
+  <section id="delivery" class="zones">
+    <h2>Delivery areas</h2>
+    <span>Gulshan-e-Maymar · Rs. 100 · ~40 min</span><span>Gulshan-e-Iqbal · Rs. 150 · ~50 min</span><span>Gulistan-e-Johar · Rs. 150 · ~55 min</span><span>North Nazimabad · Rs. 200 · ~60 min</span>
+  </section>
+  <footer id="contact">+92 300 1234567 · orders@kbh.example · Plot 14, Sector Z, Gulshan-e-Maymar, Karachi</footer>
+
+  <!-- This is the whole integration. In production: src="https://cdn.assistflow.app/widget.js" data-api="https://api.assistflow.app" -->
+  <script type="module" src="/src/embed.ts" data-business="karachi-biryani" data-api="http://localhost:4000" data-open="true"></script>
+</body>
+</html>

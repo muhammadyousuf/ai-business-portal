@@ -1,0 +1,15 @@
+{
+  "name": "assistflow-monorepo",
+  "private": true,
+  "description": "AssistFlow (working name): admin portal, business portal, backend API, embeddable bot, shared design system.",
+  "scripts": {
+    "dev:user": "pnpm --filter @assistflow/user dev",
+    "dev:admin": "pnpm --filter @assistflow/admin dev",
+    "dev:backend": "pnpm --filter @assistflow/backend dev",
+    "dev:bot": "pnpm --filter @assistflow/bot dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@10.28.0"
+}
