@@ -148,7 +148,7 @@ corrections). "AI reply" = one AI-generated response to one customer message.
 | UI | Tailwind v4 + shadcn-style components | Free | Done, see `docs/design.md` |
 | Database | **MongoDB Atlas M0** + Mongoose + Zod | Free | `businessId` on every tenant collection |
 | Knowledge search | **Atlas Vector Search** | Free on M0 | Embeddings stored with chunks |
-| Auth | Auth.js v5 | Free | Magic link + Google; roles: super_admin, support, finance, business owner, staff |
+| Auth | **Supabase Auth** (auth only; data stays in Mongo) | Free to 50k MAU | Magic link + Google. Backend verifies the Supabase JWT and maps it to roles: super_admin, support, finance, owner, manager, agent. Decided 2026-11-11 over Clerk and Auth.js on cost |
 | AI | Anthropic or OpenAI API, cheapest capable model per task | Usage | Small model for FAQ/price/order flows, mid model for complaints and analyst questions |
 | Website widget | `bot/`: Vite + React, Shadow DOM, one `<script>` tag → `widget.js` on a CDN | Free | Talks to `/v1/bot/*`; works today against the rule-based responder |
 | WhatsApp | WhatsApp Business Cloud API | Per message | Phase 2. Template approval takes days; say so in onboarding |
@@ -256,7 +256,7 @@ ai-business-portal/
       Shadow DOM embed with a playground; `docs/architecture.md` written.
 
 Not started: database and repositories (portals still read `shared/mock`),
-Auth.js, the AI service behind the bot (rule-based responder today),
+Supabase Auth wiring, the AI service behind the bot (rule-based responder today),
 WhatsApp/Meta webhooks, Resend emails, billing jobs and invoice PDFs, Stripe,
 create/edit forms everywhere (screens show the data, inputs are not wired),
 mobile nav drawer, widget CDN publishing.

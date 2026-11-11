@@ -70,7 +70,7 @@ backend/src/
   config/env.ts                  typed environment
   db/mongo.ts                    Atlas connection; fixtures when no URI
   middleware/
-    auth.ts                      session / JWT → req.user {id, role, businessId?}
+    auth.ts                      verifies the Supabase JWT → req.user {id, role, businessId?}
     tenant.ts                    pins req.businessId; audits admin cross-tenant access
     cors.ts                      portal allowlist; per-business allowed origins for the bot
     rate-limit.ts                public bot endpoints
@@ -90,7 +90,7 @@ backend/src/
 | `/health` | none | uptime checks |
 | `/v1/bot/:businessKey/config` · `POST …/sessions` · `POST …/messages` · `GET …/sessions/:id/messages` | widget key in URL + `Authorization: Bearer <visitor token>` | bot |
 | `/webhooks/whatsapp`, `/webhooks/meta` | provider signature | WhatsApp Cloud API, Meta |
-| `/v1/auth/*` | none / magic link | user + admin apps |
+| `/v1/auth/*` | Supabase handles sign-in; this only syncs the user record and membership | user + admin apps |
 | `/v1/admin/*` | platform roles (`super_admin`, `support`, `finance`) | admin app |
 | `/v1/businesses`, `/v1/catalog`, `/v1/knowledge`, `/v1/conversations`, `/v1/orders`, `/v1/customers`, `/v1/billing`, `/v1/channels` | business roles (`owner`, `manager`, `agent`), tenant-scoped | user app |
 
@@ -209,6 +209,7 @@ Bundle budget: under 120 KB gzipped including React. If it grows, switch
 | `bot/dist/widget.js` | Cloudflare R2 + CDN (or Netlify) under `cdn.<domain>/widget.js` | Immutable versioned copies (`/v/0.1.0/widget.js`) plus a `latest` alias; businesses load `latest`, rollbacks are a pointer flip. Long cache, `stale-while-revalidate`. |
 | Data | MongoDB Atlas M0 → M10 when paying | Vector Search index on `knowledge_chunks`. Backups on M10. |
 | Files | Cloudflare R2 | Knowledge documents, invoice PDFs. |
+| Auth | Supabase (free tier) | Auth only. Magic link + Google. One Supabase project, two Next.js clients (admin, user); the bot never uses it. |
 | Email / WhatsApp / Meta | Resend, WhatsApp Cloud API, Meta app | Webhooks point at `api.<domain>/webhooks/*`. |
 | Monitoring | Sentry (all four), backend structured logs | Widget errors are reported with the business key, never the visitor's text. |
 
@@ -223,7 +224,7 @@ and completes an order with no database.
 2. `backend/src/modules/bot/responder.ts` → `ai/provider.ts` with retrieval
    and tools; the API and the widget do not change.
 3. In-memory sessions and fixtures → MongoDB collections (README §4.4).
-4. Dev auth header → Auth.js sessions / JWT.
+4. Dev auth header → Supabase Auth: the portals sign in with `@supabase/ssr`, the backend verifies the JWT with the project's JWT secret and looks up the membership in Mongo. Users and memberships are mirrored into Mongo by a Supabase auth webhook so the admin portal can query them. Supabase is used for auth only; the database stays MongoDB Atlas.
 5. Widget polling → SSE stream for assistant replies and staff messages.
 
 ## 7. Decisions worth recording
@@ -237,6 +238,7 @@ and completes an order with no database.
 - **Shadow DOM widget, one script tag.** The installation story is the
   product for non-technical owners. Anything that needs a developer loses
   the restaurant.
+- **Supabase Auth, auth only (2026-11-11).** Chosen over Clerk for cost and over Auth.js for not hand-building sessions, magic links and OAuth. Organizations, invitations and roles are modelled in Mongo (`memberships`) since Supabase has no org concept. If the database ever moves to Postgres, Supabase RLS can take over tenant isolation; until then the backend `tenant.ts` middleware does it.
 - **Public key + visitor token, not cookies.** Works across any host domain
   without third-party cookie problems.
 - **Rule-based responder first.** The contract (tools, handover, order
