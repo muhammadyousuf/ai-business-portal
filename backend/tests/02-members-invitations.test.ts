@@ -56,3 +56,19 @@ describe("members, invitations and roles", () => {
     expect((await api.get(`/v1/orgs/00000000-0000-0000-0000-000000000000`).set(bearer(a.token))).status).toBe(404);
   });
 });
+
+describe("invitation signup for new accounts", () => {
+  it("creates the account server-side and joins in one step, then the member can sign in", async () => {
+    const { api: a, bearer: b, randEmail: r, signupOrg: s, signIn: si, PASSWORD: P } = await import("./helpers.js");
+    const o = await s(); const email = r("newinv");
+    const inv = await a.post(`/v1/orgs/${o.org.uuid}/invitations`).set(b(o.token)).send({ emails: [email] });
+    const token = inv.body.results[0].link.split("/invite/")[1];
+    expect((await a.post(`/v1/invitations/${token}/signup`).send({ name: "A", password: "short" })).status).toBe(400);
+    const ok = await a.post(`/v1/invitations/${token}/signup`).send({ name: "Ayesha Noor", password: P }); expect(ok.status).toBe(201); expect(ok.body.role).toBe("member");
+    const t = await si(email, P);
+    const orgs = await a.get("/v1/me/organizations").set(b(t)); expect(orgs.body.items[0].uuid).toBe(o.org.uuid); expect(orgs.body.items[0].role).toBe("member");
+    expect((await a.post(`/v1/invitations/${token}/signup`).send({ name: "Dup", password: P })).status).toBe(400); // used
+    const { deleteAuthUser } = await import("../src/services/supabase-admin.js"); const { findAuthUserByEmail } = await import("../src/services/supabase-admin.js");
+    const u = await findAuthUserByEmail(email); if (u) await deleteAuthUser(u.id);
+  });
+});

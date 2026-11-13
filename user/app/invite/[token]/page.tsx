@@ -28,20 +28,18 @@ export default function InvitePage() {
   async function signupAndAccept(e: React.FormEvent) {
     e.preventDefault(); if (!inv) return; setBusy(true); setError(null);
     try {
-      if (session && session.email === inv.email) { // invited via Supabase email: has a session, needs a password + name
-        const { error } = await supabaseBrowser().auth.updateUser({ password, data: { name, password_set: true } }); if (error) throw new Error(error.message);
+      const sb = supabaseBrowser();
+      if (session && session.email === inv.email) {
+        // Arrived through Supabase's invite email: already has a session, only needs a password and name.
+        const { error } = await sb.auth.updateUser({ password, data: { name, password_set: true } }); if (error) throw new Error(error.message);
         await api.patch("/v1/me", { name });
-      } else {
-        // Brand-new account created directly (no organization of their own).
-        const sb = supabaseBrowser();
-        const { error: se } = await sb.auth.signUp({ email: inv.email, password, options: { data: { name } } });
-        if (se) throw new Error(se.message);
-        const { error: le } = await sb.auth.signInWithPassword({ email: inv.email, password });
-        if (le) throw new Error(le.message.includes("confirm") ? "Check your email to confirm your account, then open this invitation link again." : le.message);
-        await api.patch("/v1/me", { name });
+        await accept(); return;
       }
-      await accept();
-    } catch (err) { setError((err as Error).message); setBusy(false); }
+      // Brand-new account: created server-side (auto-confirmed) and joined in one step, then sign in.
+      const r = await api.post<{ organization: { id: string } }>(`/v1/invitations/${token}/signup`, { name, password }, { auth: false });
+      const { error: le } = await sb.auth.signInWithPassword({ email: inv.email, password }); if (le) throw new Error(le.message);
+      router.replace(`/org/${r.organization.id}`); router.refresh();
+    } catch (err) { setError(err instanceof ApiError ? err.message : (err as Error).message); setBusy(false); }
   }
   if (error && !inv) return <AuthCard title="Invitation unavailable"><FormError message={error} /><Button asChild variant="outline"><Link href="/login">Go to sign in</Link></Button></AuthCard>;
   if (!inv || session === undefined) return <AuthCard title="Loading invitation…"><p className="text-sm text-muted-foreground">One moment.</p></AuthCard>;

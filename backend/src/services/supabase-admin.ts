@@ -28,8 +28,8 @@ export async function inviteByEmail(email: string, redirectTo: string, meta: Rec
 
 export async function deleteAuthUser(id: string) { await supabaseAdmin.auth.admin.deleteUser(id); }
 
-export async function setPassword(id: string, password: string) {
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password });
+export async function setPassword(id: string, password: string, opts: { confirmEmail?: boolean; meta?: Record<string, unknown> } = {}) {
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password, ...(opts.confirmEmail ? { email_confirm: true } : {}), ...(opts.meta ? { user_metadata: opts.meta } : {}) });
   if (error) throw badRequest(error.message);
 }
 

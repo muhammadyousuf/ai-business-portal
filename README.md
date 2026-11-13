@@ -11,19 +11,17 @@ WhatsApp and email. The owner confirms. You, the platform owner, run it all
 from a separate admin portal: businesses, plans, payments, invoices, every
 conversation and order, AI usage and audit logs.
 
-> **Status (2026-11-10):** Code split into four independent projects plus a
-> shared package (Step 1 of the restructure). All three portals render with
-> synthetic data; the bot talks to a rule-based backend end to end. No database,
-> auth, real AI or channel integrations yet. Architecture: `docs/architecture.md`.
+> **Status (2026-11-13): Phase 1 implemented and tested.** Admin portal,
+> client portal, backend API, embeddable chatbot, MongoDB data layer and
+> Supabase authentication are working end to end. Design: `PHASE_1_DESIGN.md`.
+> Manual test guide with expected results: `PHASE_1_TESTING.md`.
+> Architecture of the four projects: `docs/architecture.md`.
 >
-> Local database: `brew services start mongodb-community`, then `pnpm --filter @assistflow/backend db:seed`
-> creates `ai-business-portal` with its collections, indexes, plans and the demo business.
->
-> Run it (four terminals after one `pnpm install` at the root). Do not run
-> `pnpm build` in an app while its `pnpm dev` is running: both write to the
-> same `.next` folder and the assets will 404 until you restart dev.
-> `pnpm dev:backend` → http://localhost:4000 · `pnpm dev:user` → http://localhost:3000
-> · `pnpm dev:admin` → http://localhost:3001 · `pnpm dev:bot` → http://localhost:5173 (widget playground)
+> Quick start (four terminals after one `pnpm install` at the root):
+> `brew services start mongodb-community` · `pnpm --filter @assistflow/backend db:seed`
+> · `pnpm dev:backend` (:4000) · `pnpm dev:user` (:3000) · `pnpm dev:admin` (:3001) · `pnpm dev:bot` (:5173).
+> Admin login: muhammadyousuf327@gmail.com (seeded). Do not run `pnpm build` in an app while its
+> `pnpm dev` is running (shared `.next` folder).
 
 ---
 
@@ -233,6 +231,15 @@ ai-business-portal/
 
 ## 5. What has been implemented
 
+### Phase 1 (2026-11-13), see `PHASE_1_DESIGN.md` and `PHASE_1_TESTING.md`
+
+- **Backend** (`backend/`): Express + TypeScript on MongoDB; Supabase JWT verification (ES256 via JWKS, HS256 via legacy secret or cached auth-server check); 23 Mongoose collections; organization isolation by UUID on every tenant query; roles owner/member with owner-only guards; dynamic categories with a module vocabulary; branches, catalog, staff, chatbot config and Q&A; public bot API (config, sessions, messages, polling, contact); rule-based responder (Q&A matching, catalog/branch/staff lookups, order, appointment and inquiry intents, handover, unanswered log); inbox (takeover, reply, hand back, close); order/appointment/inquiry status flows with system messages; invitations (hashed single-use tokens, email via Supabase, in-app for existing users, server-side signup for new users); notifications with preferences; activity log; uploads with magic-byte validation to local disk or Cloudinary; rate limits; admin monitoring API. 28 API tests.
+- **Admin portal** (`admin/`): login, forgot/reset password, dashboard, organizations with full read-only drill-down, category management, users, cross-organization conversations/orders/appointments/inquiries, activity log, notifications, account settings with photo upload and preferences.
+- **Client portal** (`user/`): signup that creates the organization, login, forgot/reset password, organization chooser, dashboard with getting-started checklist, branches with hours, catalog with images, staff with availability, chatbot Q&A + settings + install snippet + unanswered questions, inbox with polling and manual replies, orders/appointments/inquiries with status flows, members and invitations, organization settings (logo, allowed origins, key rotation, delete), notifications, account settings.
+- **Widget** (`bot/`): Shadow DOM embed, session resume, contact form, staff-reply polling, closed state, disabled state, playground page.
+
+### Earlier milestones
+
 - [x] Business research and model selection (ChatGPT planning chat, Oct 2026,
       full transcript in `docs/chatgpt-planning-conversation.md`).
 - [x] Product decision: multi-tenant AI customer engagement platform with
@@ -258,11 +265,10 @@ ai-business-portal/
       module route maps and a live bot API; widget rebuilt as a standalone
       Shadow DOM embed with a playground; `docs/architecture.md` written.
 
-Not started: database and repositories (portals still read `shared/mock`),
-Supabase Auth wiring, the AI service behind the bot (rule-based responder today),
-WhatsApp/Meta webhooks, Resend emails, billing jobs and invoice PDFs, Stripe,
-create/edit forms everywhere (screens show the data, inputs are not wired),
-mobile nav drawer, widget CDN publishing.
+Not started (Phase 2+): AI-generated answers behind the responder interface,
+email delivery of notifications, WhatsApp/Meta channels, billing and
+subscriptions, email verification on signup, SSE streaming, widget CDN
+publishing, mobile navigation drawer in the portals.
 
 ---
 
