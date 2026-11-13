@@ -1,14 +1,11 @@
-import type { RequestHandler } from "express";
-import { HttpError } from "../lib/http-error.js";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { env } from "../config/env.js";
 
-// Minimal in-memory limiter for the public bot endpoints. Replace with Redis
-// (or the hosting platform's limiter) before real traffic.
-const buckets = new Map<string, { count: number; reset: number }>();
-export const rateLimit = (max: number, windowMs: number): RequestHandler => (req, _res, next) => {
-  const key = `${req.ip}:${req.params.businessKey ?? ""}`;
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.reset < now) { buckets.set(key, { count: 1, reset: now + windowMs }); return next(); }
-  if (++b.count > max) return next(new HttpError(429, "Too many requests"));
-  next();
-};
+const ip = (req: import("express").Request) => ipKeyGenerator(req.ip ?? "");
+const mk = (max: number, windowMs: number, keyGenerator?: (req: import("express").Request) => string) =>
+  rateLimit({ windowMs, limit: env.isTest ? 10_000 : max, standardHeaders: true, legacyHeaders: false, keyGenerator, message: { error: "Too many requests, please try again shortly", code: "rate_limited" } });
+
+export const authLimiter = mk(10, 60_000);
+export const apiLimiter = mk(300, 60_000, (req) => req.auth?.sub ?? ip(req));
+export const botLimiter = mk(60, 60_000, (req) => `${ip(req)}:${req.params.widgetKey ?? ""}`);
+export const uploadLimiter = mk(30, 60_000, (req) => req.auth?.sub ?? ip(req));
