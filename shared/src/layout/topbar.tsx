@@ -8,8 +8,8 @@ import { relativeTime } from "../lib/utils";
 
 export interface TopbarNotification { id: string; title: string; body: string; at: string; read: boolean }
 
-export function Topbar({ user, notifications, searchPlaceholder = "Search…" }: { user: { name: string; email: string }; notifications: TopbarNotification[]; searchPlaceholder?: string }) {
-  const unread = notifications.filter((n) => !n.read).length;
+export function Topbar({ user, notifications, searchPlaceholder = "Search…", notificationsHref, settingsHref, onSignOut, unreadCount }: { user: { name: string; email: string }; notifications: TopbarNotification[]; searchPlaceholder?: string; notificationsHref?: string; settingsHref?: string; onSignOut?: () => void; unreadCount?: number }) {
+  const unread = unreadCount ?? notifications.filter((n) => !n.read).length;
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur md:px-6">
       <button type="button" className="flex h-9 w-full max-w-md items-center gap-2 rounded-md border bg-card px-3 text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent">
@@ -30,6 +30,7 @@ export function Topbar({ user, notifications, searchPlaceholder = "Search…" }:
             <DropdownMenuLabel className="px-3 py-2">Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator className="my-0" />
             <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? <p className="px-3 py-6 text-center text-xs text-muted-foreground">No notifications yet.</p> : null}
               {notifications.map((n) => (
                 <div key={n.id} className="flex gap-2.5 border-b px-3 py-2.5 last:border-0">
                   <span className={`mt-1.5 size-1.5 shrink-0 rounded-full ${n.read ? "bg-transparent" : "bg-brand"}`} />
@@ -56,10 +57,10 @@ export function Topbar({ user, notifications, searchPlaceholder = "Search…" }:
               <p className="truncate text-xs">{user.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem><UserRound /> Profile</DropdownMenuItem>
-            <DropdownMenuItem><Settings /> Preferences</DropdownMenuItem>
+            <DropdownMenuItem asChild><a href={settingsHref ?? "#"}><UserRound /> Profile</a></DropdownMenuItem>
+            <DropdownMenuItem asChild><a href={settingsHref ?? "#"}><Settings /> Settings</a></DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem><LogOut /> Sign out</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onSignOut?.()}><LogOut /> Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

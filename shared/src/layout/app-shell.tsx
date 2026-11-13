@@ -12,6 +12,10 @@ export function AppShell({
   homeHref,
   footer,
   searchPlaceholder,
+  notificationsHref,
+  settingsHref,
+  onSignOut,
+  unreadCount,
   children,
 }: {
   brand: { name: string; subtitle: string; logoText: string; color: string };
@@ -21,6 +25,10 @@ export function AppShell({
   homeHref: string;
   footer?: React.ReactNode;
   searchPlaceholder?: string;
+  notificationsHref?: string;
+  settingsHref?: string;
+  onSignOut?: () => void;
+  unreadCount?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -41,7 +49,7 @@ export function AppShell({
           {footer ? <div className="border-t p-3">{footer}</div> : null}
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar user={user} notifications={notifications} searchPlaceholder={searchPlaceholder} />
+          <Topbar user={user} notifications={notifications} searchPlaceholder={searchPlaceholder} notificationsHref={notificationsHref} settingsHref={settingsHref} onSignOut={onSignOut} unreadCount={unreadCount} />
           <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-6">{children}</div>
           </main>

@@ -60,3 +60,13 @@
   .af-panel { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
   .af-launcher { margin: 16px; align-self: flex-end; }
 }
+.af-row .af-dot.staff { background: #e0f2fe; color: #0369a1; }
+.af-bubble.staff { background: #e0f2fe; color: #0c4a6e; }
+.af-head img.af-avatar { object-fit: cover; }
+.af-contact { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--af-border); background: var(--af-bg); }
+.af-contact p { margin: 0 0 2px; font-size: 12px; color: var(--af-muted-fg); }
+.af-contact input { height: 34px; padding: 0 10px; border: 1px solid var(--af-border); border-radius: 8px; font: inherit; font-size: 13px; }
+.af-contact-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+.af-link { background: none; border: 0; color: var(--af-muted-fg); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
+.af-primary { background: var(--af-brand); color: #fff; border: 0; border-radius: 8px; padding: 7px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.af-compose input:disabled, .af-compose button:disabled { opacity: .5; }
