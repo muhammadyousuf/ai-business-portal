@@ -16,6 +16,9 @@ conversation and order, AI usage and audit logs.
 > synthetic data; the bot talks to a rule-based backend end to end. No database,
 > auth, real AI or channel integrations yet. Architecture: `docs/architecture.md`.
 >
+> Local database: `brew services start mongodb-community`, then `pnpm --filter @assistflow/backend db:seed`
+> creates `ai-business-portal` with its collections, indexes, plans and the demo business.
+>
 > Run it (four terminals after one `pnpm install` at the root). Do not run
 > `pnpm build` in an app while its `pnpm dev` is running: both write to the
 > same `.next` folder and the assets will 404 until you restart dev.
