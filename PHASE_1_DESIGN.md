@@ -96,7 +96,7 @@ email verification on signup (signup is server-side with auto-confirm; see
 ┌──────────┐   ┌────────────────────────────────────────────┐   ┌─────────────┐
 │ customer │   │  backend/  Express + TypeScript  :4000      │   │ Supabase    │
 │ website  │──►│  /v1/auth  /v1/admin/*  /v1/orgs/:orgId/*   │◄─►│ Auth (JWT)  │
-│ + widget │   │  /v1/bot/:widgetKey/*  /v1/me/*             │   │ Storage     │
+│ + widget │   │  /v1/bot/:widgetKey/*  /v1/me/*             │   │ only        │
 └──────────┘   │  middleware: jwt → user → org → role        │   └─────────────┘
                └───────────────────┬────────────────────────┘
                                    ▼
@@ -107,7 +107,7 @@ email verification on signup (signup is server-side with auto-confirm; see
                           └─────────────────┘
 ```
 
-- **Supabase** issues and signs JWTs (ES256) and stores files. Nothing else.
+- **Supabase** issues and signs JWTs (ES256). Nothing else: all data and files are in MongoDB and the file store.
 - **Backend** verifies every JWT against the project JWKS, loads the Mongo
   user, resolves the organization from the URL, checks the membership and
   role, and only then runs the handler. The frontends never talk to Mongo.
@@ -155,7 +155,7 @@ where noted. "FK" below means a referenced id validated in the service layer
 | `unanswered_questions` | orgId, question, count, lastAskedAt, resolvedQaId? | {orgId,count -1} |
 | `notifications` | recipientType(admin/user), recipientId, orgId?, type, title, body, link, readAt, createdAt | {recipientType,recipientId,createdAt -1}, {recipientId,readAt} |
 | `activity_logs` | orgId?, actorType(admin/user/bot/system), actorId, action, targetType, targetId, summary, meta, createdAt | {orgId,createdAt -1}, {createdAt -1} |
-| `files` | orgId?, uploaderType, uploaderId, bucket, path, url, mime, size, purpose(avatar/logo/catalog/branch/staff/qa), createdAt | {orgId,createdAt -1} |
+| `files` | orgId?, uploaderType, uploaderId, provider(local/cloudinary), providerId, path, url, mime, size, purpose(avatar/logo/catalog/branch/staff/qa), createdAt | {orgId,createdAt -1} |
 | `counters` | key (`${orgId}:order`), seq | key u |
 | `bot_sessions` | orgId, conversationId, tokenHash, lastSeenAt (TTL 24h) | tokenHash u, lastSeenAt TTL |
 
@@ -358,15 +358,23 @@ staff messages, and a "closed" state.
 
 ## 10. Files and uploads
 
-Supabase Storage, two buckets: `avatars` (public) and `org-media` (public
-read, path `orgs/<orgId>/<purpose>/<id>.<ext>`). Backend-only writes with the
-service key after validation: MIME allow-list (jpeg, png, webp, gif, pdf for
-menus), max 5 MB images / 10 MB PDFs, extension derived from MIME not from
-the filename, random file names. Every upload writes a `files` row. Chosen
-over Cloudinary because the credentials and platform already exist; the
-adapter is one file (`services/storage.ts`) if that changes.
+Supabase is used for **authentication only**; all data and files live in
+MongoDB plus a file store. Uploads go through the backend (`POST /v1/orgs/:orgId/files`,
+`POST /v1/me/avatar`) which validates and then hands the bytes to a storage
+adapter (`services/storage.ts`):
 
----
+- **Cloudinary** adapter: active when `CLOUDINARY_URL` is set (keys to be
+  provided). Files are uploaded server-side with the API secret, under the
+  folder `assistflow/<orgId>/<purpose>/`; the secure URL is stored.
+- **Local disk** adapter (default in development): writes to
+  `backend/uploads/<orgId>/<purpose>/<random>.<ext>` and serves them at
+  `GET /uploads/...`. Same interface, so switching is an env var.
+
+Validation: MIME allow-list (jpeg, png, webp, gif; pdf for menus), max 5 MB
+for images / 10 MB for PDFs, extension derived from the detected MIME not
+the filename, random file names. Every upload writes a `files` row in Mongo
+(uploader, org, purpose, mime, size, url, provider, providerId) so files can
+be listed, attributed and deleted.
 
 ## 11. Notifications
 
