@@ -36,6 +36,13 @@ describe("client signup and account", () => {
     const wrong = await api.post("/v1/me/change-password").set(bearer(o.token)).send({ currentPassword: "wrong-pass1", newPassword: "NewPassw0rd" }); expect(wrong.status).toBe(401);
     const ok = await api.post("/v1/me/change-password").set(bearer(o.token)).send({ currentPassword: PASSWORD, newPassword: "NewPassw0rd" }); expect(ok.status).toBe(200);
   });
+  it("forgot-password always answers 200, generates a recovery link only for matching accounts, and never leaks existence", async () => {
+    const o = await signupOrg();
+    const unknown = await api.post("/v1/auth/forgot-password").send({ email: randEmail("ghost"), portal: "client" }); expect(unknown.status).toBe(200); expect(unknown.body.devLink).toBeUndefined();
+    const client = await api.post("/v1/auth/forgot-password").send({ email: o.email, portal: "client" }); expect(client.status).toBe(200); expect(client.body.ok).toBe(true);
+    const wrongPortal = await api.post("/v1/auth/forgot-password").send({ email: o.email, portal: "admin" }); expect(wrongPortal.status).toBe(200); expect(wrongPortal.body.devLink).toBeUndefined();
+    expect((await api.post("/v1/auth/forgot-password").send({ email: "not-an-email" })).status).toBe(400);
+  });
   it("auto-creates a user record for an auth-only account and shows no organizations", async () => {
     const raw = await createAuthOnly();
     const orgs = await api.get("/v1/me/organizations").set(bearer(raw.token)); expect(orgs.status).toBe(200); expect(orgs.body.items).toHaveLength(0);

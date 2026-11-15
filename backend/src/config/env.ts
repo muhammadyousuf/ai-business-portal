@@ -30,4 +30,5 @@ export const env = {
     ? { cloudName: process.env.CLOUDINARY_CLOUD_NAME, apiKey: process.env.CLOUDINARY_API_KEY, apiSecret: process.env.CLOUDINARY_API_SECRET, uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || undefined }
     : undefined,
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",
+  email: { resendApiKey: isTest ? undefined : process.env.RESEND_API_KEY || undefined, from: process.env.MAIL_FROM || "AssistFlow <onboarding@resend.dev>" },
 };

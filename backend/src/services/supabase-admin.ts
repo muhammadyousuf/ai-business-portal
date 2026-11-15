@@ -42,8 +42,10 @@ export async function verifyPassword(email: string, password: string) {
   return data.session;
 }
 
-export async function generateRecoveryLink(email: string, redirectTo: string) {
-  const { data, error } = await supabaseAdmin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo } });
-  if (error) throw badRequest(error.message);
-  return data.properties.action_link;
+// Returns the hashed recovery token. The portal confirms it server-side at /auth/confirm (verifyOtp), which
+// works with cookie-based sessions, unlike Supabase's default redirect link.
+export async function generateRecoveryToken(email: string) {
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({ type: "recovery", email });
+  if (error) return null;
+  return data.properties.hashed_token;
 }

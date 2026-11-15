@@ -3,7 +3,10 @@ import { z } from "zod";
 import { wrap } from "../../lib/async.js";
 import { validate } from "../../lib/validate.js";
 import { authLimiter } from "../../middleware/rate-limit.js";
-import { Category, User } from "../../models/index.js";
+import { AdminUser, Category, User } from "../../models/index.js";
+import { env } from "../../config/env.js";
+import { generateRecoveryToken } from "../../services/supabase-admin.js";
+import { sendPasswordReset } from "../../services/email.js";
 import { createAuthUser, deleteAuthUser } from "../../services/supabase-admin.js";
 import { createOrganizationForUser, publicOrg } from "../../services/orgs.js";
 import { logActivity, userActor } from "../../services/activity.js";
@@ -27,6 +30,25 @@ authRouter.post("/signup", authLimiter, validate({ body: z.object({ email: z.str
     await deleteAuthUser(authUser.id).catch(() => undefined); // keep auth and data consistent
     throw e;
   }
+}));
+
+// Forgot password: always answers 200 so email addresses cannot be enumerated. Admin requests only act
+// for admin accounts; client requests only for client accounts.
+authRouter.post("/forgot-password", authLimiter, validate({ body: z.object({ email: z.string().email().max(254), portal: z.enum(["admin", "client"]).default("client") }) }), wrap(async (req, res) => {
+  const email = req.body.email.toLowerCase(); const portal = req.body.portal as "admin" | "client";
+  const exists = portal === "admin" ? await AdminUser.exists({ email }) : await User.exists({ email });
+  let delivery: string = "none";
+  if (exists) {
+    const tokenHash = await generateRecoveryToken(email);
+    if (tokenHash) {
+      const base = portal === "admin" ? env.urls.adminApp : env.urls.userApp;
+      const link = `${base}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&next=/reset-password`;
+      const r = await sendPasswordReset(email, link, portal);
+      delivery = r.sent ? "email" : r.reason;
+      if (!r.sent && env.isDev) (res.locals as Record<string, unknown>).devLink = link;
+    }
+  }
+  res.json({ ok: true, message: "If an account exists for that email, a reset link has been sent.", ...(env.isDev && (res.locals as Record<string, unknown>).devLink ? { devLink: (res.locals as Record<string, unknown>).devLink, delivery } : {}) });
 }));
 
 // Public: active categories for the signup form.

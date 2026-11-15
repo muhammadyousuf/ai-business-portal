@@ -1,3 +1,4 @@
+import "dotenv/config";
 import mongoose from "mongoose";
 export default async function setup() {
   process.env.NODE_ENV = "test";

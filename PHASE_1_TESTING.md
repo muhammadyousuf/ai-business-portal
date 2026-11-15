@@ -29,9 +29,12 @@ Do not run `pnpm build` in an app while its `pnpm dev` runs (shared `.next`).
 | Organization owner | create via Signup (any email, e.g. owner@example.com) | choose one (8+ chars, letter + number) | Signup auto-confirms the email |
 | Organization member | invited by the owner | set on the invite page | |
 
-Emails: signup and invitation signup do **not** need email delivery.
-Only "forgot password" sends an email (via Supabase). Supabase's built-in
-sender is rate-limited to a few emails per hour; use a real inbox you own.
+Emails are sent through **Resend** (`RESEND_API_KEY` in `backend/.env`):
+password-reset links and invitation emails. Until a sending domain is
+verified in Resend, the sender is `onboarding@resend.dev`, which Resend only
+delivers to the email address of the Resend account owner; other recipients
+are rejected and the portal still shows the shareable invite link. Signup and
+invitation signup never depend on email.
 
 ### Automated API tests
 ```
@@ -51,7 +54,7 @@ about 2.5 minutes; against local MongoDB about 30 seconds.
 | A1 | Open /login, sign in with a **client** owner account | Signed out again with "This account is not an admin account." |
 | A2 | Sign in as the admin (table above) | Dashboard "Platform overview" with counts, categories chart, newest organizations, activity |
 | A3 | /signup | 404 (no admin signup exists) |
-| A4 | Forgot password → enter admin email → Send | "a reset link is on its way". Open the email → lands on /reset-password → set a new password → redirected to dashboard. (Rate-limited by Supabase; a wrong/expired link shows "invalid or has expired") |
+| A4 | Forgot password → enter admin email → Send | "a reset link is on its way" with a 60 s resend cooldown. A branded AssistFlow email arrives (Resend); its button opens /auth/confirm → /reset-password → set a new password → redirected to the dashboard. The link is single-use and expires in 1 hour; reusing it shows "invalid or has expired" with a "Request a new link" option. Unknown emails get the same success message (no account enumeration); a client-only email requested from the admin portal sends nothing |
 | A5 | Settings → Profile: change name, upload a PNG/JPEG under 5 MB | Toast "Profile saved" / "Photo updated"; avatar visible in topbar and stored in Cloudinary under `assistflow/platform/avatar/`. A `.txt` renamed to `.png` is rejected (400 "Unsupported file type") |
 | A6 | Settings → Notifications: toggle switches | Each toggle persists after reload |
 | A7 | Settings → Security: wrong current password | "Current password is incorrect". Correct one → "Password changed"; sign out and back in with the new password |
@@ -78,7 +81,7 @@ about 2.5 minutes; against local MongoDB about 30 seconds.
 | C3 | Same email again | "An account with this email already exists" |
 | C4 | Sign out → /login with wrong password | "Wrong email or password." |
 | C5 | /login correct → /organizations | Organization chooser lists Kababjees with role owner |
-| C6 | Forgot password (real inbox) | Same behaviour as A4 |
+| C6 | Forgot password (real inbox) | Same behaviour as A4, via the client portal (`portal: "client"`); admin-only emails requested here send nothing |
 | C7 | /account | Profile, photo upload, notification preferences, change password (same checks as A5–A7) |
 | C8 | Visit /org/<random uuid> | "Organization not found" / choose another organization |
 
@@ -98,7 +101,7 @@ about 2.5 minutes; against local MongoDB about 30 seconds.
 ### 3.3 Members and invitations
 | # | Steps | Expected |
 |---|---|---|
-| M1 | Members → Invite people: `ali@example.com, sara@example.com` | "Invitations sent"; each result shows delivery (`email`, `in_app` or `link`) and a Copy link button; pending list shows both |
+| M1 | Members → Invite people: `ali@example.com, sara@example.com` | "Invitations sent"; each result shows delivery (`email` via Resend, `in_app` for existing users, or `link` if sending failed) and a Copy link button; pending list shows both |
 | M2 | Open the copied link in a private window | "Join Kababjees" with the inviter's name; email is prefilled and locked |
 | M3 | Enter name + password → Create account and join | Lands on the organization dashboard as a member; owner gets a "… joined" notification; Members page shows the new member |
 | M4 | Open the same link again | "Invitation no longer valid … accepted" |
@@ -203,7 +206,7 @@ db.files.find({orgId: "<uuid>"})                   // uploads with provider/loca
 Expected: every organization-related document has `orgId` equal to the organization UUID; `bot_sessions` rows disappear 24 h after `lastSeenAt`.
 
 ## 10. Known limitations (Phase 1)
-- Email delivery is only used for password reset (and Supabase's optional invite email). In-app notifications are complete; email notifications are a Phase 2 item.
+- Transactional email (password reset, invitations) goes through Resend. Notification emails (new order, new message, …) are still in-app only; email notifications are a Phase 2 item.
 - The chatbot is rule-based (Q&A matching + catalog/branch/staff lookups + order/appointment/inquiry intents). An AI provider plugs in behind the same responder interface.
 - File storage is Cloudinary (cloud `dmhp14egx`, folder `assistflow/<orgId>/<purpose>/`) when the `CLOUDINARY_*` variables are set; local disk (`backend/uploads`) otherwise. Automated tests always use local disk.
 - Widget updates arrive by polling (3–8 s), not push.

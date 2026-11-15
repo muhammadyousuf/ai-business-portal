@@ -16,6 +16,7 @@ import { saveUpload } from "../../services/files.js";
 import { notifyAdmins, notifyOrg, notifyUsers } from "../../services/notifications.js";
 import { publicOrg } from "../../services/orgs.js";
 import { findAuthUserByEmail, inviteByEmail } from "../../services/supabase-admin.js";
+import { emailEnabled, sendInvitation } from "../../services/email.js";
 
 export const orgCoreRouter = Router({ mergeParams: true });
 
@@ -113,6 +114,9 @@ orgCoreRouter.post("/invitations", validate({ body: z.object({ emails: z.array(z
     if (existingUser) {
       await notifyUsers([String(existingUser._id)], { type: "invitation", title: `${req.user!.name || req.user!.email} invited you to ${req.org!.name}`, body: "Open the invitation to join.", link: `/invite/${token}`, orgId: req.org!.uuid });
       delivery = "in_app";
+    } else if (emailEnabled()) {
+      const r = await sendInvitation(email, link, req.org!.name, req.user!.name || req.user!.email, req.body.role);
+      emailSent = r.sent; delivery = r.sent ? "email" : `link (email not sent: ${r.reason})`;
     } else if (!(await findAuthUserByEmail(email))) {
       const r = await inviteByEmail(email, link, { invitationToken: token, orgName: req.org!.name });
       emailSent = r.sent; delivery = r.sent ? "email" : `link (email not sent: ${r.reason})`;
@@ -139,6 +143,7 @@ orgCoreRouter.post("/invitations/:id/resend", wrap(async (req, res) => {
   const existingUser = await User.findOne({ email: inv.email });
   let delivery = "link";
   if (existingUser) { await notifyUsers([String(existingUser._id)], { type: "invitation", title: `Reminder: you are invited to ${req.org!.name}`, link: `/invite/${token}`, orgId: req.org!.uuid }); delivery = "in_app"; }
+  else if (emailEnabled()) { const r = await sendInvitation(inv.email, link, req.org!.name, req.user!.name || req.user!.email, inv.role); inv.emailSent = r.sent; delivery = r.sent ? "email" : "link"; }
   else if (!(await findAuthUserByEmail(inv.email))) { const r = await inviteByEmail(inv.email, link, { invitationToken: token, orgName: req.org!.name }); inv.emailSent = r.sent; delivery = r.sent ? "email" : "link"; }
   inv.lastSentAt = new Date(); await inv.save();
   res.json({ id: String(inv._id), link, delivery, expiresAt: inv.expiresAt });
