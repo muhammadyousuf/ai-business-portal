@@ -25,7 +25,8 @@ export const env = {
   },
   portalOrigins: list(process.env.PORTAL_ORIGINS),
   botDevOrigins: list(process.env.BOT_DEV_ORIGINS),
-  cloudinary: process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
+  // Tests always use local disk so they never write to the real media library.
+  cloudinary: !isTest && process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
     ? { cloudName: process.env.CLOUDINARY_CLOUD_NAME, apiKey: process.env.CLOUDINARY_API_KEY, apiSecret: process.env.CLOUDINARY_API_SECRET, uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || undefined }
     : undefined,
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",

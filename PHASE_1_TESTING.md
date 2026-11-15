@@ -50,7 +50,7 @@ Supabase users (`qa-…@example.com`) and delete them afterwards, and use the
 | A2 | Sign in as the admin (table above) | Dashboard "Platform overview" with counts, categories chart, newest organizations, activity |
 | A3 | /signup | 404 (no admin signup exists) |
 | A4 | Forgot password → enter admin email → Send | "a reset link is on its way". Open the email → lands on /reset-password → set a new password → redirected to dashboard. (Rate-limited by Supabase; a wrong/expired link shows "invalid or has expired") |
-| A5 | Settings → Profile: change name, upload a PNG/JPEG under 5 MB | Toast "Profile saved" / "Photo updated"; avatar visible in topbar. A `.txt` renamed to `.png` is rejected (400 "Unsupported file type") |
+| A5 | Settings → Profile: change name, upload a PNG/JPEG under 5 MB | Toast "Profile saved" / "Photo updated"; avatar visible in topbar and stored in Cloudinary under `assistflow/platform/avatar/`. A `.txt` renamed to `.png` is rejected (400 "Unsupported file type") |
 | A6 | Settings → Notifications: toggle switches | Each toggle persists after reload |
 | A7 | Settings → Security: wrong current password | "Current password is incorrect". Correct one → "Password changed"; sign out and back in with the new password |
 | A8 | Categories → New category: key `pharmacy`, name, modules `branches, catalog, qa, inbox, orders`, labels | Row appears with "0 orgs". Same key again → "A category with this key already exists". Client signup now lists Pharmacy |
@@ -201,6 +201,6 @@ Expected: every organization-related document has `orgId` equal to the organizat
 ## 10. Known limitations (Phase 1)
 - Email delivery is only used for password reset (and Supabase's optional invite email). In-app notifications are complete; email notifications are a Phase 2 item.
 - The chatbot is rule-based (Q&A matching + catalog/branch/staff lookups + order/appointment/inquiry intents). An AI provider plugs in behind the same responder interface.
-- File storage is local disk (`backend/uploads`) until `CLOUDINARY_URL` is set.
+- File storage is Cloudinary (cloud `dmhp14egx`, folder `assistflow/<orgId>/<purpose>/`) when the `CLOUDINARY_*` variables are set; local disk (`backend/uploads`) otherwise. Automated tests always use local disk.
 - Widget updates arrive by polling (3–8 s), not push.
 - No mobile navigation drawer in the portals yet (desktop first); the widget itself is mobile-ready.
