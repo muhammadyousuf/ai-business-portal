@@ -7,16 +7,16 @@ import { env } from "../config/env.js";
 export interface StoredFile { provider: "local" | "cloudinary"; providerId: string; path: string; url: string }
 export interface PutInput { buffer: Buffer; mime: string; ext: string; orgId?: string; purpose: string }
 
-// Supabase is auth-only, so files go to Cloudinary (when CLOUDINARY_URL is set) or local disk.
-const useCloudinary = !!env.cloudinaryUrl;
-if (useCloudinary) cloudinary.config({ secure: true });
+// Supabase is auth-only, so files go to Cloudinary (when configured) or local disk.
+const useCloudinary = !!env.cloudinary;
+if (env.cloudinary) cloudinary.config({ cloud_name: env.cloudinary.cloudName, api_key: env.cloudinary.apiKey, api_secret: env.cloudinary.apiSecret, secure: true });
 
 export async function putFile(input: PutInput): Promise<StoredFile> {
   const folder = `${input.orgId ?? "platform"}/${input.purpose}`;
   const name = `${Date.now().toString(36)}-${randomBytes(6).toString("hex")}`;
   if (useCloudinary) {
     const res = await new Promise<{ public_id: string; secure_url: string }>((resolve, reject) => {
-      cloudinary.uploader.upload_stream({ folder: `assistflow/${folder}`, public_id: name, resource_type: input.mime === "application/pdf" ? "raw" : "image" }, (err, r) => (err || !r ? reject(err) : resolve(r))).end(input.buffer);
+      cloudinary.uploader.upload_stream({ folder: `assistflow/${folder}`, public_id: name, resource_type: input.mime === "application/pdf" ? "raw" : "image", ...(env.cloudinary?.uploadPreset ? { upload_preset: env.cloudinary.uploadPreset } : {}) }, (err, r) => (err || !r ? reject(err) : resolve(r))).end(input.buffer);
     });
     return { provider: "cloudinary", providerId: res.public_id, path: res.public_id, url: res.secure_url };
   }
