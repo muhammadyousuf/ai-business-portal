@@ -18,7 +18,7 @@ conversation and order, AI usage and audit logs.
 > Architecture of the four projects: `docs/architecture.md`.
 >
 > Quick start (four terminals after one `pnpm install` at the root):
-> `brew services start mongodb-community` · `pnpm --filter @assistflow/backend db:seed`
+> Database is MongoDB Atlas (configured in `backend/.env`); `pnpm --filter @assistflow/backend db:seed` once,
 > · `pnpm dev:backend` (:4000) · `pnpm dev:user` (:3000) · `pnpm dev:admin` (:3001) · `pnpm dev:bot` (:5173).
 > Admin login: muhammadyousuf327@gmail.com (seeded). Do not run `pnpm build` in an app while its
 > `pnpm dev` is running (shared `.next` folder).

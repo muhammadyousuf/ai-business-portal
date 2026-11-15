@@ -8,7 +8,8 @@ manually. Expected results are stated for every step.
 ## 1. Setup
 
 ```
-brew services start mongodb-community          # MongoDB 8 on 127.0.0.1:27017
+# Database: MongoDB Atlas (cluster0.7ose5dy, database ai-business-portal) is configured in backend/.env.
+# To work offline instead: brew services start mongodb-community and point MONGODB_URI at 127.0.0.1:27017.
 pnpm install                                    # once, at the repo root
 pnpm --filter @assistflow/backend db:seed       # categories + admin account
 pnpm dev:backend    # http://localhost:4000
@@ -17,8 +18,8 @@ pnpm dev:admin      # http://localhost:3001   admin portal
 pnpm dev:bot        # http://localhost:5173   widget playground
 ```
 
-Env files already filled: `backend/.env` (Mongo, Supabase URL, JWKS, secret
-key, publishable key), `user/.env.local`, `admin/.env.local`.
+Env files already filled: `backend/.env` (Atlas URI, Supabase URL, JWKS, legacy JWT secret,
+secret key, publishable key, Cloudinary), `user/.env.local`, `admin/.env.local`.
 Do not run `pnpm build` in an app while its `pnpm dev` runs (shared `.next`).
 
 ### Test accounts
@@ -38,7 +39,8 @@ pnpm --filter @assistflow/backend test
 ```
 Expected: `5 passed (5)` files, `28 passed (28)` tests. They create temporary
 Supabase users (`qa-…@example.com`) and delete them afterwards, and use the
-`ai-business-portal-test` database (dropped at start).
+`ai-business-portal-test` database (dropped at start). On Atlas the run takes
+about 2.5 minutes; against local MongoDB about 30 seconds.
 
 ---
 
@@ -186,8 +188,9 @@ Get a token: sign in on the portal and copy `access_token` from the Supabase coo
 | S15 | Widget `GET /v1/bot/<key>/config` with `Origin: https://evil.example` after the owner set allowed origins | Response has no `Access-Control-Allow-Origin` header (browser blocks it) |
 | S16 | Any org-scoped list while the organization is suspended | 403 "This organization is suspended" |
 
-## 9. Database checks (mongosh ai-business-portal)
+## 9. Database checks
 ```
+mongosh "mongodb+srv://<user>:<password>@cluster0.7ose5dy.mongodb.net/ai-business-portal"
 db.organizations.find({}, {uuid:1,name:1,categoryKey:1,status:1,widgetKey:1})
 db.memberships.find({orgId: "<uuid>"})            // every member row carries orgId
 db.invitations.find({orgId: "<uuid>"})            // tokenHash only, never the raw token
