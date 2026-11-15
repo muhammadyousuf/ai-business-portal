@@ -7,13 +7,15 @@ export class ApiError extends Error {
 
 const BASE = () => (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000").replace(/\/$/, "");
 
-async function request<T>(method: string, path: string, body?: unknown, opts: { form?: FormData; auth?: boolean } = {}): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, opts: { form?: FormData; auth?: boolean } = {}, retried = false): Promise<T> {
   const headers: Record<string, string> = {};
-  if (opts.auth !== false) { const t = await accessToken(); if (t) headers.Authorization = `Bearer ${t}`; }
+  if (opts.auth !== false) { const t = await accessToken(retried); if (t) headers.Authorization = `Bearer ${t}`; }
   if (body !== undefined && !opts.form) headers["Content-Type"] = "application/json";
   const res = await fetch(`${BASE()}${path}`, { method, headers, body: opts.form ?? (body !== undefined ? JSON.stringify(body) : undefined) });
   const text = await res.text();
   const data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  // An expired token comes back as 401: refresh once and retry before giving up.
+  if (res.status === 401 && opts.auth !== false && !retried && headers.Authorization) return request<T>(method, path, body, opts, true);
   if (!res.ok) throw new ApiError(res.status, (data.error as string) ?? res.statusText, data.code as string | undefined, data.details as Record<string, string[]> | undefined);
   return data as T;
 }

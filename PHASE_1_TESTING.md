@@ -64,6 +64,7 @@ Supabase users (`qa-…@example.com`) and delete them afterwards, and use the
 | A16 | Activity log | Signups, invitations, Q&A changes, chatbot handovers, admin actions ("Admin … viewed …" entries are recorded but hidden from the org tab) |
 | A17 | Notifications | "New organization: …" entries appear after each client signup; mark read / mark all read |
 | A18 | Account menu → Sign out | Back at /login; visiting / redirects to /login |
+| A19 | Same browser: sign in to the client portal (:3000) as an owner, then open the admin portal (:3001) | Admin shows its plain login page (no "not an admin account" banner) and the client session stays signed in. Each app keeps its own cookie (`sb-assistflow-app`, `sb-assistflow-admin`); signing out of one does not affect the other |
 
 ## 3. Client portal (http://localhost:3000)
 
