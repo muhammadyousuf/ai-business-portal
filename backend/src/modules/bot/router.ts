@@ -8,7 +8,7 @@ import { toJSONList } from "../../lib/serialize.js";
 import { validate } from "../../lib/validate.js";
 import { botCors } from "../../middleware/cors.js";
 import { botLimiter } from "../../middleware/rate-limit.js";
-import { BotSession, Branch, Category, ChatbotConfig, ChatbotQa, Conversation, Message, Organization } from "../../models/index.js";
+import { BotSession, Branch, CatalogGroup, CatalogItem, Category, ChatbotConfig, ChatbotQa, Conversation, Message, Organization, StaffProfile } from "../../models/index.js";
 import { notifyOrg } from "../../services/notifications.js";
 import { respond } from "../../services/bot/responder.js";
 
@@ -29,6 +29,24 @@ botRouter.get("/:widgetKey/config", wrap(async (req, res) => {
   const top = cfg.quickReplies.length ? cfg.quickReplies : (await ChatbotQa.find({ orgId: req.org!.uuid, isActive: true }).sort({ hits: -1, createdAt: 1 }).limit(3).lean()).map((q) => q.question);
   const branches = await Branch.find({ orgId: req.org!.uuid, isActive: true }, { name: 1 }).lean();
   res.json({ business: { name: req.org!.name, logoText: req.org!.name.slice(0, 1).toUpperCase(), logoUrl: req.org!.logoUrl, brand: cfg.brandColor, locale: "en" }, widget: { enabled: cfg.isEnabled, greeting: cfg.greeting, quickReplies: top, position: cfg.position, buttonLabel: cfg.buttonLabel, poweredBy: cfg.poweredBy, collectContact: cfg.collectContact, humanConfirms: true, assistantName: cfg.name, branches: branches.map((b) => ({ id: String(b._id), name: b.name })) } });
+}));
+
+// Public business profile for the hosted chat page / playground: real profile, branches, catalog and staff, nothing private.
+botRouter.get("/:widgetKey/site", wrap(async (req, res) => {
+  const org = req.org!; const modules = new Set(req.category?.modules ?? []); const labels = (req.category?.labels ?? {}) as Partial<Record<"catalogGroup" | "catalogItem" | "staff", string>>;
+  const [branches, groups, items, staff] = await Promise.all([
+    modules.has("branches") ? Branch.find({ orgId: org.uuid, isActive: true }).sort({ isMain: -1, createdAt: 1 }).lean() : [],
+    modules.has("catalog") ? CatalogGroup.find({ orgId: org.uuid, isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean() : [],
+    modules.has("catalog") ? CatalogItem.find({ orgId: org.uuid, isAvailable: true }).sort({ sortOrder: 1, createdAt: 1 }).lean() : [],
+    modules.has("staff") ? StaffProfile.find({ orgId: org.uuid, isActive: true }).lean() : [],
+  ]);
+  res.json({
+    business: { name: org.name, description: org.description, logoUrl: org.logoUrl, website: org.website, phone: org.phone, email: org.email, address: org.address, currency: org.currency, category: req.category?.name ?? org.categoryKey },
+    labels: { catalogGroup: labels.catalogGroup ?? "Category", catalogItem: labels.catalogItem ?? "Item", staff: labels.staff ?? "Staff" },
+    branches: branches.map((b) => ({ id: String(b._id), name: b.name, address: b.address, phone: b.phone, hours: b.hours, isMain: b.isMain, deliveryAreas: b.deliveryAreas })),
+    groups: groups.map((g) => ({ id: String(g._id), name: g.name, description: g.description, items: items.filter((i) => i.groupId === String(g._id)).map((i) => ({ id: String(i._id), name: i.name, description: i.description, price: i.price, imageUrl: i.imageUrl, tags: i.tags })) })),
+    staff: staff.map((s) => ({ id: String(s._id), name: s.name, title: s.title, specialty: s.specialty, fee: s.fee, photoUrl: s.photoUrl, availability: s.availability })),
+  });
 }));
 
 async function sessionFromReq(req: import("express").Request) {

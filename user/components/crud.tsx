@@ -6,13 +6,13 @@ import { FormError, fieldErrors } from "@assistflow/shared/components/form";
 import { ApiError } from "@assistflow/shared/api/client";
 
 // Generic create/edit dialog wrapper that handles busy state and API validation errors.
-export function FormDialog({ open, onOpenChange, title, description, size, onSubmit, children, submitLabel = "Save" }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; description?: string; size?: "sm" | "md" | "lg"; onSubmit: () => Promise<void>; children: (errors: Record<string, string>) => React.ReactNode; submitLabel?: string }) {
+export function FormDialog({ open, onOpenChange, title, description, size, onSubmit, children, submitLabel = "Save", cancelLabel = "Cancel", closeOnSuccess = true }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; description?: string; size?: "sm" | "md" | "lg"; onSubmit: () => Promise<void>; children: (errors: Record<string, string>) => React.ReactNode; submitLabel?: string; cancelLabel?: string; closeOnSuccess?: boolean }) {
   const [busy, setBusy] = React.useState(false); const [err, setErr] = React.useState<string | null>(null); const [errors, setErrors] = React.useState<Record<string, string>>({});
   React.useEffect(() => { if (open) { setErr(null); setErrors({}); } }, [open]);
-  async function submit(e: React.FormEvent) { e.preventDefault(); setBusy(true); setErr(null); setErrors({}); try { await onSubmit(); onOpenChange(false); } catch (ex) { if (ex instanceof ApiError) { setErr(ex.message); setErrors(fieldErrors(ex.details)); } else setErr((ex as Error).message); } finally { setBusy(false); } }
+  async function submit(e: React.FormEvent) { e.preventDefault(); setBusy(true); setErr(null); setErrors({}); try { await onSubmit(); if (closeOnSuccess) onOpenChange(false); } catch (ex) { if (ex instanceof ApiError) { setErr(ex.message); setErrors(fieldErrors(ex.details)); } else setErr((ex as Error).message); } finally { setBusy(false); } }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}><DialogContent title={title} description={description} size={size}>
-      <form onSubmit={submit} className="space-y-4"><div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1"><FormError message={err} />{children(errors)}</div><div className="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" disabled={busy}>{busy ? "Saving…" : submitLabel}</Button></div></form>
+      <form onSubmit={submit} className="space-y-4"><div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1"><FormError message={err} />{children(errors)}</div><div className="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{cancelLabel}</Button><Button type="submit" disabled={busy}>{busy ? "Saving…" : submitLabel}</Button></div></form>
     </DialogContent></Dialog>
   );
 }

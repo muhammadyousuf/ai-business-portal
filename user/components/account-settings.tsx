@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@assistflow/shared/ui/
 import { Field, FormError, fieldErrors } from "@assistflow/shared/components/form";
 import { UserAvatar } from "@assistflow/shared/components/user-avatar";
 import { useToast } from "@assistflow/shared/ui/toast";
+import { supabaseBrowser } from "@assistflow/shared/api/supabase";
 
 export interface Account { id: string; email: string; name: string; phone: string; avatarUrl: string; notificationPrefs: Record<string, boolean> }
-const PREFS: [string, string][] = [["newOrders", "New orders and order status changes"], ["newMessages", "New customer messages in conversations you handle"], ["needsHuman", "A customer needs a human"], ["appointments", "Appointment and inquiry requests"], ["members", "Members joining or leaving"], ["email", "Also send me emails (coming in Phase 2)"]];
+const PREFS: [string, string][] = [["newOrders", "New orders and order status changes"], ["newMessages", "New customer messages in conversations you handle"], ["needsHuman", "A customer needs a human"], ["appointments", "Appointment and inquiry requests"], ["members", "Members joining or leaving"], ["email", "Also email me these notifications"]];
 
 export function AccountSettings({ base, account, onChange, title = "Account settings", extra }: { base: "/v1/me" | "/v1/admin/me"; account: Account; onChange: () => Promise<void>; title?: string; extra?: React.ReactNode }) {
   const toast = useToast();
@@ -24,7 +25,7 @@ export function AccountSettings({ base, account, onChange, title = "Account sett
   async function saveProfile() { setBusy(true); setErr(null); try { await api.patch(base, { name, phone }); toast.success("Profile saved"); await onChange(); } catch (e) { if (e instanceof ApiError) { setErr(e.message); setErrors(fieldErrors(e.details)); } } finally { setBusy(false); } }
   async function upload(f: File) { try { await api.upload(key("avatar"), f); toast.success("Photo updated"); await onChange(); } catch (e) { toast.error("Upload failed", (e as Error).message); } }
   async function togglePref(k: string, v: boolean) { try { await api.patch(key("notification-preferences"), { [k]: v }); await onChange(); } catch (e) { toast.error("Could not save", (e as Error).message); } }
-  async function changePassword() { setPwErr(null); if (pw.next !== pw.confirm) return setPwErr("New passwords do not match"); setBusy(true); try { await api.post(key("change-password"), { currentPassword: pw.current, newPassword: pw.next }); toast.success("Password changed"); setPw({ current: "", next: "", confirm: "" }); } catch (e) { setPwErr(e instanceof ApiError ? e.message : "Failed"); } finally { setBusy(false); } }
+  async function changePassword() { setPwErr(null); if (pw.next !== pw.confirm) return setPwErr("New passwords do not match"); setBusy(true); try { await api.post(key("change-password"), { currentPassword: pw.current, newPassword: pw.next }); /* Supabase ends every session when the password changes; sign in again so the user is not logged out on the next page. */ const { error } = await supabaseBrowser().auth.signInWithPassword({ email: account.email, password: pw.next }); if (error) throw new ApiError(401, "Password changed. Please sign in again."); toast.success("Password changed", "You stay signed in on this device."); setPw({ current: "", next: "", confirm: "" }); } catch (e) { setPwErr(e instanceof ApiError ? e.message : "Failed"); } finally { setBusy(false); } }
   return (
     <>
       <PageHeader title={title} description={account.email} />
@@ -40,7 +41,7 @@ export function AccountSettings({ base, account, onChange, title = "Account sett
             </CardContent></Card>
         </TabsContent>
         <TabsContent value="notifications">
-          <Card><CardHeader><CardTitle>Notification preferences</CardTitle><CardDescription>In-app notifications. Email delivery arrives in Phase 2.</CardDescription></CardHeader>
+          <Card><CardHeader><CardTitle>Notification preferences</CardTitle><CardDescription>Choose what shows up in your notifications. Turn on the last switch to also receive each one by email.</CardDescription></CardHeader>
             <CardContent className="divide-y">{PREFS.map(([k, label]) => <div key={k} className="flex items-center justify-between py-3 text-sm"><span>{label}</span><Switch checked={account.notificationPrefs?.[k] ?? k !== "email"} onCheckedChange={(v) => togglePref(k, v)} aria-label={label} /></div>)}</CardContent></Card>
         </TabsContent>
         <TabsContent value="security">

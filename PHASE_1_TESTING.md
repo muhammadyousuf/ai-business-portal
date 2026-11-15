@@ -81,9 +81,13 @@ about 2.5 minutes; against local MongoDB about 30 seconds.
 | C3 | Same email again | "An account with this email already exists" |
 | C4 | Sign out → /login with wrong password | "Wrong email or password." |
 | C5 | /login correct → /organizations | Organization chooser lists Kababjees with role owner |
-| C6 | Forgot password (real inbox) | Same behaviour as A4, via the client portal (`portal: "client"`); admin-only emails requested here send nothing |
-| C7 | /account | Profile, photo upload, notification preferences, change password (same checks as A5–A7) |
+| C6 | Forgot password (real inbox) | Same behaviour as A4, via the client portal (`portal: "client"`); admin-only emails requested here send nothing. In development the page also shows the reset link ("Dev link") so the flow can be tested without a mailbox |
+| C7 | /account | Profile, photo upload, notification preferences, change password (same checks as A5–A7). After a password change you stay signed in (the portal re-authenticates; Supabase ends every session on a password change) |
 | C8 | Visit /org/<random uuid> | "Organization not found" / choose another organization |
+| C9 | After signup (or joining through an invitation as a new account) | Welcome email "Welcome to AssistFlow · <org> — your verification code is 123456" with the 6-digit code and a "Verify my email" button. A banner "Confirm your email" sits above every portal page until the code is entered; signing in is not blocked |
+| C10 | Banner: enter a wrong code | "That code is not right. Check the email and try again." (8 attempts per code, 30-minute expiry) |
+| C11 | Banner: "Resend code" within a minute | 429 "Please wait a minute before requesting another code"; afterwards a new code is issued (in development the banner shows the code) |
+| C12 | Enter the right code, or open the email link `/verify-email?code=…` while signed in | "Email verified"; banner disappears, also after a reload |
 
 ### 3.2 Organization management (owner)
 | # | Steps | Expected |
@@ -165,8 +169,11 @@ about 2.5 minutes; against local MongoDB about 30 seconds.
 | # | Steps | Expected |
 |---|---|---|
 | N1 | Bell in topbar | Unread count; dropdown with latest 8; "View all" |
-| N2 | /org/<id>/notifications | List; click marks read; "Mark all read" |
+| N2 | /org/<id>/notifications | List; click marks read; "Mark all read" clears the count and the bell badge updates without a navigation |
 | N3 | Account → Notifications: turn off "New orders" | New orders no longer notify that user (others still do) |
+| N3b | Account → Notifications: turn on "Also email me these notifications" | Every notification that user receives is also emailed through Resend (subject "<title> · <org>", button "Open in AssistFlow"). Off by default |
+| N3c | Bell dropdown: click an entry | Marks it read and opens the linked page (order, conversation, members…); "View all notifications" at the bottom |
+| N3d | ⌘K / Ctrl+K (or the search box in the topbar) | Command palette: type to jump to any sidebar page; from two characters it also searches conversations, orders, appointments and inquiries by customer name, phone, number or last message |
 | N4 | Events covered | invitation (existing user), member joined/left/removed, ownership transfer, needs-human, new message while with team, new order / appointment / inquiry and every status change, organization suspended/reactivated/deleted; admin: new organization, organization deleted |
 
 ## 8. Security and isolation (API, use any HTTP client with a Bearer token)
@@ -206,8 +213,10 @@ db.files.find({orgId: "<uuid>"})                   // uploads with provider/loca
 Expected: every organization-related document has `orgId` equal to the organization UUID; `bot_sessions` rows disappear 24 h after `lastSeenAt`.
 
 ## 10. Known limitations (Phase 1)
-- Transactional email (password reset, invitations) goes through Resend. Notification emails (new order, new message, …) are still in-app only; email notifications are a Phase 2 item.
+- All email (welcome + verification code, password reset, invitations, opt-in notification copies) goes through Resend. Until a sending domain is verified in Resend and `MAIL_FROM` is changed, the `onboarding@resend.dev` sender only delivers to the Resend account owner's address; every other recipient is rejected by Resend ("You can only send testing emails to your own email address"). The product degrades gracefully: invitations show a shareable link, forgot-password shows a dev link in development, and the verification banner can issue a new code.
+- Email verification is informational (banner) rather than blocking: existing accounts were marked verified when the feature shipped (2026-11-15).
 - The chatbot is rule-based (Q&A matching + catalog/branch/staff lookups + order/appointment/inquiry intents). An AI provider plugs in behind the same responder interface.
 - File storage is Cloudinary (cloud `dmhp14egx`, folder `assistflow/<orgId>/<purpose>/`) when the `CLOUDINARY_*` variables are set; local disk (`backend/uploads`) otherwise. Automated tests always use local disk.
 - Widget updates arrive by polling (3–8 s), not push.
+- The chatbot playground / hosted chat page (`bot/index.html`, linked from Chatbot → Install → "Try it on a test page") renders the business's real profile, branches, catalog and staff from the public endpoint `GET /v1/bot/:widgetKey/site`; it contains no sample content of its own.
 - No mobile navigation drawer in the portals yet (desktop first); the widget itself is mobile-ready.

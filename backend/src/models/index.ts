@@ -23,6 +23,9 @@ const userSchema = new Schema({
   supabaseId: { type: String, required: true, unique: true }, email: { type: String, required: true, unique: true, lowercase: true },
   name: { type: String, default: "" }, phone: { type: String, default: "" }, avatarUrl: { type: String, default: "" },
   notificationPrefs: { type: prefs, default: () => ({}) }, lastLoginAt: Date,
+  // Email ownership check after signup. Not required to sign in; the portal shows a banner until it is done.
+  emailVerifiedAt: Date,
+  emailVerification: { type: { codeHash: String, expiresAt: Date, sentAt: Date, attempts: { type: Number, default: 0 } }, select: false },
 }, opts("users"));
 export const User = mongoose.model("User", userSchema);
 

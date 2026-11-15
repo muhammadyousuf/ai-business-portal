@@ -10,6 +10,7 @@ import { requireJwt, requireUser } from "../../middleware/auth.js";
 import { Category, Invitation, Membership, Organization, User } from "../../models/index.js";
 import { logActivity, userActor } from "../../services/activity.js";
 import { notifyUsers } from "../../services/notifications.js";
+import { issueVerification } from "../../services/verification.js";
 
 // Token-based invitation endpoints (not org-scoped: the visitor may not be a member yet).
 export const invitationsRouter = Router();
@@ -61,5 +62,6 @@ invitationsRouter.post("/:token/signup", authLimiter, validate({ body: z.object(
   if (existingAuth) { await setPassword(existingAuth.id, req.body.password, { confirmEmail: true, meta: { name: req.body.name } }); supabaseId = existingAuth.id; }
   else supabaseId = (await createAuthUser(inv.email, req.body.password, { name: req.body.name })).id;
   const user = await User.create({ supabaseId, email: inv.email, name: req.body.name });
-  res.status(201).json(await acceptInvitation(inv, org, user));
+  const verification = await issueVerification(user, org.name).catch((e: Error) => ({ sent: false, reason: e.message }));
+  res.status(201).json({ ...(await acceptInvitation(inv, org, user)), verification });
 }));

@@ -1,3 +1,4 @@
 "use client";
 import { UserProvider } from "@/lib/user-context";
-export default function PortalLayout({ children }: { children: React.ReactNode }) { return <UserProvider>{children}</UserProvider>; }
+import { VerifyEmailBanner } from "@/components/verify-email-banner";
+export default function PortalLayout({ children }: { children: React.ReactNode }) { return <UserProvider><VerifyEmailBanner />{children}</UserProvider>; }

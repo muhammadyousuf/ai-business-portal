@@ -45,7 +45,7 @@ export async function signupOrg(opts: { categoryKey?: string; orgName?: string; 
   if (res.status !== 201) throw new Error(`signup failed: ${res.status} ${JSON.stringify(res.body)}`);
   created.push(res.body.user.supabaseId);
   const token = await signIn(email);
-  return { email, token, user: res.body.user as { id: string; supabaseId: string }, org: res.body.organization as { id: string; uuid: string; name: string; widgetKey: string } };
+  return { email, token, user: res.body.user as { id: string; supabaseId: string }, org: res.body.organization as { id: string; uuid: string; name: string; widgetKey: string }, verification: res.body.verification as { sent: boolean; devCode: string } };
 }
 
 export const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });

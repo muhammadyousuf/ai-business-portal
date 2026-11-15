@@ -1,5 +1,7 @@
 "use client";
-import { usePathname } from "next/navigation";
+import * as React from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { api } from "@assistflow/shared/api/client";
 import { AppShell } from "@assistflow/shared/layout/app-shell";
 import type { NavItem } from "@assistflow/shared/layout/sidebar-nav";
 import { Badge } from "@assistflow/shared/ui/badge";
@@ -8,10 +10,12 @@ import { AdminProvider, useAdmin } from "@/lib/admin-context";
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { admin, signOut } = useAdmin();
-  const pathname = usePathname();
+  const pathname = usePathname(); const router = useRouter();
   const notif = useApi<{ items: { id: string; title: string; body: string; createdAt: string; readAt?: string }[]; unread: number }>("/v1/me/notifications?limit=8&__admin=1", [pathname]);
-  const adminNotif = useApi<{ items: { id: string; title: string; body: string; createdAt: string; readAt?: string }[]; unread: number }>("/v1/admin/notifications?limit=8", [pathname]);
+  const adminNotif = useApi<{ items: { id: string; title: string; body: string; link?: string; createdAt: string; readAt?: string }[]; unread: number }>("/v1/admin/notifications?limit=8", [pathname]);
   void notif;
+  React.useEffect(() => { const h = () => void adminNotif.refetch(); window.addEventListener("assistflow:notifications-changed", h); const id = setInterval(h, 30_000); return () => { window.removeEventListener("assistflow:notifications-changed", h); clearInterval(id); }; }, [adminNotif]);
+  const openNotification = React.useCallback(async (n: { id: string; href?: string; read: boolean }) => { if (!n.read) await api.patch(`/v1/admin/notifications/${n.id}/read`).catch(() => undefined); await adminNotif.refetch(); if (n.href) router.push(n.href); }, [adminNotif, router]);
   const navGroups: { label?: string; items: NavItem[] }[] = [
     { items: [{ label: "Dashboard", href: "/", icon: "dashboard", exact: true }] },
     { label: "Platform", items: [{ label: "Organizations", href: "/organizations", icon: "businesses" }, { label: "Categories", href: "/categories", icon: "catalog" }, { label: "Users", href: "/users", icon: "users" }] },
@@ -20,7 +24,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   ];
   return (
     <AppShell brand={{ name: "AssistFlow", subtitle: "Platform admin", logoText: "A", color: "oklch(0.51 0.19 264)" }} user={{ name: admin.name || admin.email, email: admin.email }}
-      notifications={(adminNotif.data?.items ?? []).map((n) => ({ id: n.id, title: n.title, body: n.body, at: n.createdAt, read: !!n.readAt }))} unreadCount={adminNotif.data?.unread ?? 0}
+      notifications={(adminNotif.data?.items ?? []).map((n) => ({ id: n.id, title: n.title, body: n.body, at: n.createdAt, read: !!n.readAt, href: n.link || undefined }))} unreadCount={adminNotif.data?.unread ?? 0} onNotificationClick={openNotification}
       navGroups={navGroups} homeHref="/" searchPlaceholder="Search organizations…" notificationsHref="/notifications" settingsHref="/settings" onSignOut={() => void signOut()}
       footer={<div className="rounded-lg bg-card p-3 text-xs shadow-xs"><div className="flex items-center justify-between"><span className="font-medium">Phase 1</span><Badge variant="brand">Live data</Badge></div><p className="mt-1 text-muted-foreground">{process.env.NEXT_PUBLIC_API_URL}</p></div>}>
       {children}

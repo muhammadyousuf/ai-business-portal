@@ -11,10 +11,11 @@ import { Field, FormError, fieldErrors } from "@assistflow/shared/components/for
 import { ConfirmDialog } from "@assistflow/shared/components/confirm";
 import { useToast } from "@assistflow/shared/ui/toast";
 import { useOrg } from "@/lib/org-context";
+import { useUser } from "@/lib/user-context";
 import { ImageUpload } from "@/components/crud";
 
 export default function OrgSettingsPage() {
-  const { org, isOwner, refresh } = useOrg(); const toast = useToast(); const router = useRouter();
+  const { org, isOwner, refresh } = useOrg(); const { refresh: refreshUser } = useUser(); const toast = useToast(); const router = useRouter();
   const [f, setF] = React.useState({ name: org.name, description: org.description, website: org.website, phone: org.phone, email: org.email, address: { line1: org.address?.line1 ?? "", city: org.address?.city ?? "", country: org.address?.country ?? "" }, currency: org.currency, timezone: org.timezone });
   const [origins, setOrigins] = React.useState(org.allowedOrigins.join("\n"));
   const [busy, setBusy] = React.useState(false); const [err, setErr] = React.useState<string | null>(null); const [errors, setErrors] = React.useState<Record<string, string>>({}); const [del, setDel] = React.useState(false); const [rotate, setRotate] = React.useState(false);
@@ -36,7 +37,7 @@ export default function OrgSettingsPage() {
           {!isOwner ? <p className="text-xs text-muted-foreground">Only the owner can change these.</p> : null}</CardContent></Card>
       {isOwner ? <Card className="border-destructive/30"><CardHeader><CardTitle>Danger zone</CardTitle><CardDescription>Deleting disables the chatbot immediately. Data is retained for 30 days.</CardDescription></CardHeader><CardContent><Button variant="destructive" onClick={() => setDel(true)}>Delete organization</Button></CardContent></Card> : null}
       <ConfirmDialog open={rotate} onOpenChange={setRotate} title="Rotate the widget key?" description="The old key stops working. You must update the script tag on your website." confirmLabel="Rotate" onConfirm={async () => { await api.post(`/v1/orgs/${org.uuid}/rotate-widget-key`); await refresh(); toast.success("Key rotated. Update your website snippet."); }} />
-      <ConfirmDialog open={del} onOpenChange={setDel} title={`Delete ${org.name}?`} description="Members lose access and the chatbot stops answering." destructive confirmLabel="Delete organization" typeToConfirm={org.name} onConfirm={async () => { await api.delete(`/v1/orgs/${org.uuid}`, { confirmName: org.name }); router.replace("/organizations"); }} />
+      <ConfirmDialog open={del} onOpenChange={setDel} title={`Delete ${org.name}?`} description="Members lose access and the chatbot stops answering." destructive confirmLabel="Delete organization" typeToConfirm={org.name} onConfirm={async () => { await api.delete(`/v1/orgs/${org.uuid}`, { confirmName: org.name }); await refreshUser(); /* drop the deleted org from the cached list before leaving */ router.replace("/organizations"); }} />
     </>
   );
 }

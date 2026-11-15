@@ -10,6 +10,7 @@ import { sendPasswordReset } from "../../services/email.js";
 import { createAuthUser, deleteAuthUser } from "../../services/supabase-admin.js";
 import { createOrganizationForUser, publicOrg } from "../../services/orgs.js";
 import { logActivity, userActor } from "../../services/activity.js";
+import { issueVerification } from "../../services/verification.js";
 
 export const authRouter = Router();
 
@@ -25,7 +26,8 @@ authRouter.post("/signup", authLimiter, validate({ body: z.object({ email: z.str
     const user = await User.create({ supabaseId: authUser.id, email, name: b.name, phone: b.phone ?? "" });
     const org = await createOrganizationForUser(user, { name: b.orgName, categoryKey: b.categoryKey, phone: b.phone, city: b.city, country: b.country });
     await logActivity({ actor: userActor(user), action: "user.signup", targetType: "user", targetId: String(user._id), summary: `${email} signed up` });
-    res.status(201).json({ user: user.toJSON(), organization: publicOrg(org) });
+    const verification = await issueVerification(user, org.name).catch((e: Error) => ({ sent: false, reason: e.message }));
+    res.status(201).json({ user: user.toJSON(), organization: publicOrg(org), verification });
   } catch (e) {
     await deleteAuthUser(authUser.id).catch(() => undefined); // keep auth and data consistent
     throw e;

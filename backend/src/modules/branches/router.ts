@@ -19,7 +19,8 @@ branchesRouter.get("/", wrap(async (req, res) => res.json({ items: toJSONList(aw
 
 branchesRouter.post("/", validate({ body }), wrap(async (req, res) => {
   if (req.body.isMain) await Branch.updateMany({ orgId: req.org!.uuid }, { $set: { isMain: false } });
-  const b = await Branch.create({ ...req.body, orgId: req.org!.uuid });
+  const first = (await Branch.countDocuments({ orgId: req.org!.uuid })) === 0; // the first branch is the main one unless told otherwise
+  const b = await Branch.create({ ...req.body, isMain: req.body.isMain ?? first, orgId: req.org!.uuid });
   await logActivity({ orgId: req.org!.uuid, actor: userActor(req.user!), action: "branch.created", targetType: "branch", targetId: String(b._id), summary: `${req.user!.name || req.user!.email} added branch ${b.name}` });
   res.status(201).json({ branch: b.toJSON() });
 }));

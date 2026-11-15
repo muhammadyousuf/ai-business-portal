@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@assistflow/shared/api/client";
 import { supabaseBrowser } from "@assistflow/shared/api/supabase";
 
-export interface Me { id: string; email: string; name: string; phone: string; avatarUrl: string; notificationPrefs: Record<string, boolean> }
+export interface Me { id: string; email: string; name: string; phone: string; avatarUrl: string; notificationPrefs: Record<string, boolean>; emailVerifiedAt?: string }
 export interface MyOrg { id: string; uuid: string; name: string; slug: string; categoryKey: string; logoUrl: string; status: string; role: "owner" | "member"; category: { key: string; name: string; modules: string[]; labels: Record<string, string> } | null }
 const Ctx = React.createContext<{ me: Me; orgs: MyOrg[]; refresh: () => Promise<void>; signOut: () => Promise<void> } | null>(null);
 

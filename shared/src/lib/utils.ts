@@ -23,16 +23,10 @@ export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = {}) {
   }).format(new Date(iso));
 }
 
-export function relativeTime(iso: string, now = new Date("2026-10-31T13:30:00Z")) {
-  const diff = (now.getTime() - new Date(iso).getTime()) / 1000;
-  const units: [number, string][] = [
-    [60, "s"],
-    [60, "m"],
-    [24, "h"],
-    [7, "d"],
-    [4.35, "w"],
-    [12, "mo"],
-  ];
+export function relativeTime(iso: string, now: Date = new Date()) {
+  const diff = Math.max(0, (now.getTime() - new Date(iso).getTime()) / 1000);
+  // Each step: how many of the previous unit make one of this unit.
+  const units: [number, string][] = [[60, "m"], [60, "h"], [24, "d"], [7, "w"], [4.35, "mo"], [12, "y"]];
   let value = diff;
   let unit = "s";
   for (const [step, label] of units) {
@@ -40,6 +34,7 @@ export function relativeTime(iso: string, now = new Date("2026-10-31T13:30:00Z")
     value = value / step;
     unit = label;
   }
+  if (unit === "s") return value < 10 ? "just now" : `${Math.floor(value)}s ago`;
   return `${Math.max(1, Math.floor(value))}${unit} ago`;
 }
 

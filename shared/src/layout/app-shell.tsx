@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BrandMark } from "../components/brand-mark";
 import { TooltipProvider } from "../ui/tooltip";
 import { SidebarNav, type NavItem } from "./sidebar-nav";
-import { Topbar, type TopbarNotification } from "./topbar";
+import { Topbar, type SearchResult, type TopbarNotification } from "./topbar";
 
 export function AppShell({
   brand,
@@ -15,6 +15,8 @@ export function AppShell({
   notificationsHref,
   settingsHref,
   onSignOut,
+  onNotificationClick,
+  onSearch,
   unreadCount,
   children,
 }: {
@@ -28,6 +30,8 @@ export function AppShell({
   notificationsHref?: string;
   settingsHref?: string;
   onSignOut?: () => void;
+  onNotificationClick?: (n: TopbarNotification) => void;
+  onSearch?: (query: string) => Promise<SearchResult[]>;
   unreadCount?: number;
   children: React.ReactNode;
 }) {
@@ -49,7 +53,7 @@ export function AppShell({
           {footer ? <div className="border-t p-3">{footer}</div> : null}
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar user={user} notifications={notifications} searchPlaceholder={searchPlaceholder} notificationsHref={notificationsHref} settingsHref={settingsHref} onSignOut={onSignOut} unreadCount={unreadCount} />
+          <Topbar user={user} notifications={notifications} navGroups={navGroups} onSearch={onSearch} searchPlaceholder={searchPlaceholder} notificationsHref={notificationsHref} settingsHref={settingsHref} onSignOut={onSignOut} onNotificationClick={onNotificationClick} unreadCount={unreadCount} />
           <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-7xl space-y-6">{children}</div>
           </main>

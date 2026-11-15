@@ -6,9 +6,10 @@ beforeAll(setupDb); afterAll(teardown);
 describe("branches, catalog, staff, chatbot config and Q&A", () => {
   it("manages branches with hours and main-branch rules", async () => {
     const o = await signupOrg(); const base = `/v1/orgs/${o.org.uuid}`;
-    const c = await api.post(`${base}/branches`).set(bearer(o.token)).send({ name: "DHA", phone: "021", hours: [{ day: 1, open: "11:00", close: "23:00" }], deliveryAreas: ["DHA", "Clifton"], deliveryCharge: 150 }); expect(c.status).toBe(201);
+    const first = await api.post(`${base}/branches`).set(bearer(o.token)).send({ name: "Clifton", phone: "021" }); expect(first.status).toBe(201); expect(first.body.branch.isMain).toBe(true); // first branch becomes main
+    const c = await api.post(`${base}/branches`).set(bearer(o.token)).send({ name: "DHA", phone: "021", hours: [{ day: 1, open: "11:00", close: "23:00" }], deliveryAreas: ["DHA", "Clifton"], deliveryCharge: 150 }); expect(c.status).toBe(201); expect(c.body.branch.isMain).toBe(false);
     const list = await api.get(`${base}/branches`).set(bearer(o.token)); expect(list.body.items).toHaveLength(2);
-    const main = list.body.items.find((b: { isMain: boolean }) => b.isMain);
+    const main = list.body.items.find((b: { isMain: boolean }) => b.isMain); expect(main.id).toBe(first.body.branch.id);
     expect((await api.delete(`${base}/branches/${main.id}`).set(bearer(o.token))).status).toBe(400);
     expect((await api.patch(`${base}/branches/${c.body.branch.id}`).set(bearer(o.token)).send({ isMain: true })).status).toBe(200);
     expect((await api.delete(`${base}/branches/${main.id}`).set(bearer(o.token))).status).toBe(200);

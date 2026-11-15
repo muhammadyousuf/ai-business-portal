@@ -41,3 +41,17 @@ export function sendInvitation(to: string, link: string, orgName: string, invite
     layout(`Join ${orgName}`, `<p><b>${esc(inviter)}</b> invited you to join <b>${esc(orgName)}</b> as a ${esc(role)}.</p><p>Accept the invitation to manage the chatbot, inbox and orders together.</p>`, { label: "Accept invitation", url: link }, "This invitation expires in 7 days. If you weren't expecting it, you can ignore this email."),
     `${inviter} invited you to ${orgName} on AssistFlow.\n\nAccept here (expires in 7 days): ${link}`);
 }
+
+export function sendNotificationEmail(to: string, n: { title: string; body?: string; link?: string }, orgName?: string) {
+  const subject = orgName ? `${n.title} · ${orgName}` : n.title;
+  return sendEmail(to, subject,
+    layout(n.title, `${n.body ? `<p>${esc(n.body)}</p>` : ""}<p style="color:#71717a">You are receiving this because email notifications are turned on in your AssistFlow account settings.</p>`, n.link ? { label: "Open in AssistFlow", url: n.link } : undefined, "Turn these emails off any time under Account settings → Notifications."),
+    `${n.title}\n\n${n.body ?? ""}${n.link ? `\n\nOpen: ${n.link}` : ""}\n\nTurn these emails off under Account settings → Notifications.`);
+}
+
+export function sendWelcomeVerification(to: string, name: string, code: string, link: string, orgName?: string) {
+  const first = (name || "").trim().split(" ")[0];
+  return sendEmail(to, `Welcome to AssistFlow${orgName ? ` · ${orgName}` : ""} — your verification code is ${code}`,
+    layout(`Welcome${first ? `, ${esc(first)}` : ""}!`, `<p>${orgName ? `<b>${esc(orgName)}</b> is set up on AssistFlow.` : "Your AssistFlow account is ready."} Confirm this email address so your team and customers can reach you.</p><p style="margin:18px 0 6px">Your verification code</p><p style="font-size:28px;letter-spacing:6px;font-weight:700;margin:0 0 18px">${esc(code)}</p><p>Enter it in the portal, or use the button below. The code expires in 30 minutes.</p><p style="margin-top:18px">Next steps: add your branches, ${orgName ? "menu or services" : "catalog"}, and the questions customers ask most, then install the chatbot on your website from <b>Chatbot → Install on website</b>.</p>`, { label: "Verify my email", url: link }, "If you didn't create this account, you can ignore this email."),
+    `Welcome to AssistFlow${orgName ? ` (${orgName})` : ""}.\n\nYour verification code: ${code} (expires in 30 minutes)\nOr open: ${link}\n\nIf you didn't create this account, ignore this email.`);
+}

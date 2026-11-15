@@ -3,71 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Karachi Biryani House (playground)</title>
+  <title>Chat page</title>
   <link rel="icon" href="data:," />
   <style>
-    /* Deliberately plain, generic "customer website" CSS. The widget must look right on top of anything. */
+    /* Deliberately plain "customer website" CSS: the widget must look right on top of anything. */
+    :root { --accent: #d9471f; }
     body { margin: 0; font-family: Georgia, serif; color: #2a2118; background: #fffdf8; }
     .bar { background: #111; color: #fff; font: 12px/1.4 system-ui; text-align: center; padding: 6px; }
-    .bar a { color: #fff; }
-    header { display: flex; align-items: center; justify-content: space-between; max-width: 960px; margin: 0 auto; padding: 20px 24px; }
+    .bar a, .bar code { color: #fff; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 960px; margin: 0 auto; padding: 20px 24px; }
     .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
-    .logo span { width: 36px; height: 36px; border-radius: 8px; background: #d9471f; color: #fff; display: grid; place-items: center; font-family: system-ui; }
+    .logo span, .logo img { width: 36px; height: 36px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: system-ui; object-fit: cover; }
     nav a { margin-left: 20px; color: inherit; text-decoration: none; }
-    .cta { background: #d9471f; color: #fff; border-radius: 999px; padding: 8px 16px; text-decoration: none; font-family: system-ui; font-size: 14px; }
+    .cta { background: var(--accent); color: #fff; border-radius: 999px; padding: 8px 16px; text-decoration: none; font-family: system-ui; font-size: 14px; white-space: nowrap; }
     .hero { max-width: 960px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; }
     .hero h1 { font-size: 40px; line-height: 1.1; margin: 8px 0 12px; }
     .hero p { color: #6b5d50; font-size: 17px; }
-    .eyebrow { color: #d9471f; font: 600 12px system-ui; letter-spacing: .08em; text-transform: uppercase; }
-    .img { aspect-ratio: 4/3; border-radius: 24px; background: linear-gradient(135deg, #fde68a, #fdba74, #fda4af); }
+    .eyebrow { color: var(--accent); font: 600 12px system-ui; letter-spacing: .08em; text-transform: uppercase; }
+    .img { aspect-ratio: 4/3; border-radius: 24px; background: linear-gradient(135deg, #fde68a, #fdba74, #fda4af); display: grid; place-items: center; overflow: hidden; }
+    .img img { max-width: 60%; max-height: 60%; object-fit: contain; }
     section { max-width: 960px; margin: 0 auto; padding: 24px; }
     h2 { font-size: 26px; margin: 0 0 4px; }
     .note { color: #6b5d50; font-size: 14px; margin: 0 0 20px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
     .card h3 { margin: 0 0 8px; font-size: 16px; }
-    .card div { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1ece4; font-size: 14px; }
-    .card div:last-child { border: 0; }
+    .card .row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #f1ece4; font-size: 14px; }
+    .card .row:last-child { border: 0; }
+    .card .row small { display: block; color: #6b5d50; font-size: 12px; }
+    .card .row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; margin-right: 10px; vertical-align: middle; }
     .zones span { display: inline-block; background: #fff; border-radius: 999px; padding: 6px 12px; margin: 4px 6px 4px 0; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .muted { color: #6b5d50; font-size: 14px; }
     footer { max-width: 960px; margin: 0 auto; padding: 40px 24px; color: #6b5d50; font-size: 14px; }
+    .empty { padding: 40px 24px; text-align: center; color: #6b5d50; }
     @media (max-width: 720px) { .hero, .grid { grid-template-columns: 1fr; } nav { display: none; } }
   </style>
 </head>
 <body>
-  <div class="bar" id="bar">Playground: a plain HTML "customer website" with the AssistFlow widget installed. Open this page with <code>?business=&lt;your widget key&gt;</code> (copy it from Chatbot → Install in your portal). Needs the backend on <a href="http://localhost:4000/health">localhost:4000</a>.</div>
-  <header>
-    <div class="logo"><span>K</span> Karachi Biryani House</div>
-    <nav><a href="#menu">Menu</a><a href="#delivery">Delivery</a><a href="#contact">Contact</a></nav>
-    <a class="cta" href="tel:+923001234567">Call to order</a>
-  </header>
-  <div class="hero">
-    <div>
-      <div class="eyebrow">Since 1998 · Gulshan-e-Maymar</div>
-      <h1>Karachi's biryani, delivered hot to your door.</h1>
-      <p>Sindhi biryani, charcoal BBQ and karahi. Open daily 12:00 to 23:30. Delivery across Gulshan, Johar and North Nazimabad.</p>
-    </div>
-    <div class="img"></div>
-  </div>
-  <section id="menu">
-    <h2>Menu</h2>
-    <p class="note">The chat assistant reads prices from the same data, so it is never out of date.</p>
-    <div class="grid">
-      <div class="card"><h3>Biryani</h3><div><span>Chicken Biryani</span><b>Rs. 350</b></div><div><span>Beef Biryani</span><b>Rs. 420</b></div><div><span>Mutton Biryani</span><b>Rs. 650</b></div><div><span style="text-decoration:line-through">Prawn Biryani</span><b>Rs. 780</b></div></div>
-      <div class="card"><h3>BBQ &amp; Karahi</h3><div><span>Chicken Tikka (half)</span><b>Rs. 480</b></div><div><span>Beef Seekh Kabab (4 pcs)</span><b>Rs. 520</b></div><div><span>Chicken Karahi (half kg)</span><b>Rs. 1,450</b></div><div><span>Mutton Karahi</span><b>Rs. 2,600</b></div></div>
-      <div class="card"><h3>Sides</h3><div><span>Naan</span><b>Rs. 40</b></div><div><span>Raita</span><b>Rs. 60</b></div><div><span>Fresh Salad</span><b>Rs. 80</b></div></div>
-      <div class="card"><h3>Drinks &amp; Desserts</h3><div><span>Soft Drink (1.5L)</span><b>Rs. 180</b></div><div><span>Kheer</span><b>Rs. 150</b></div></div>
-    </div>
-  </section>
-  <section id="delivery" class="zones">
-    <h2>Delivery areas</h2>
-    <span>Gulshan-e-Maymar · Rs. 100 · ~40 min</span><span>Gulshan-e-Iqbal · Rs. 150 · ~50 min</span><span>Gulistan-e-Johar · Rs. 150 · ~55 min</span><span>North Nazimabad · Rs. 200 · ~60 min</span>
-  </section>
-  <footer id="contact">+92 300 1234567 · orders@kbh.example · Plot 14, Sector Z, Gulshan-e-Maymar, Karachi</footer>
+  <div class="bar" id="bar">Test page: a plain website with the AssistFlow chatbot installed. Everything below comes from the business's own AssistFlow data.</div>
+  <div id="site"><div class="empty">Loading…</div></div>
 
-  <!-- This is the whole integration. In production: src="https://cdn.assistflow.app/widget.js" data-api="https://api.assistflow.app" -->
   <script>
-    // In this playground the widget key comes from the URL (?business=wk_…). On a real site it is the data-business attribute.
-    (function () { const u = new URL(location.href); if (!u.searchParams.get("business")) { document.getElementById("bar").innerHTML = 'No widget key. Open this page as <code>?business=&lt;widget key&gt;</code>, copied from your portal under Chatbot → Install on website.'; } })();
+    // The page renders the business's real AssistFlow data (profile, branches, catalog, staff) from the public
+    // widget API, so what the visitor sees matches what the chatbot knows. Nothing here is hardcoded.
+    (async function () {
+      const u = new URL(location.href); const key = u.searchParams.get("business"); const api = (u.searchParams.get("api") || "http://localhost:4000").replace(/\/$/, "");
+      const el = document.getElementById("site"); const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      if (!key) { document.getElementById("bar").innerHTML = 'No widget key. Open this page as <code>?business=&lt;widget key&gt;</code>, copied from your portal under Chatbot → Install on website.'; el.innerHTML = ""; return; }
+      let d; try { const r = await fetch(`${api}/v1/bot/${encodeURIComponent(key)}/site`); if (!r.ok) throw new Error(r.status); d = await r.json(); } catch (e) { el.innerHTML = `<div class="empty">Could not load this business (${esc(e.message)}). Is the backend running at ${esc(api)}?</div>`; return; }
+      const b = d.business; document.title = `${b.name} · chat`;
+      const money = (n) => `${b.currency === "PKR" ? "Rs. " : b.currency + " "}${Number(n).toLocaleString("en-PK")}`;
+      const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; const today = new Date().getDay();
+      const main = d.branches.find((x) => x.isMain) || d.branches[0];
+      const hoursToday = main?.hours?.find((h) => h.day === today);
+      const openLine = hoursToday ? (hoursToday.closed ? "Closed today" : `Open today ${hoursToday.open}–${hoursToday.close}`) : "";
+      const areas = [...new Set(d.branches.flatMap((x) => x.deliveryAreas || []))];
+      const addr = (a) => [a?.line1, a?.city, a?.country].filter(Boolean).join(", ");
+      el.innerHTML = `
+        <header>
+          <div class="logo">${b.logoUrl ? `<img src="${esc(b.logoUrl)}" alt="" />` : `<span>${esc(b.name.slice(0, 1).toUpperCase())}</span>`} ${esc(b.name)}</div>
+          <nav>${d.groups.length ? `<a href="#catalog">${esc(d.labels.catalogGroup)}</a>` : ""}${d.branches.length ? `<a href="#branches">Branches</a>` : ""}${d.staff.length ? `<a href="#staff">${esc(d.labels.staff)}</a>` : ""}<a href="#contact">Contact</a></nav>
+          ${b.phone ? `<a class="cta" href="tel:${esc(b.phone)}">Call ${esc(b.phone)}</a>` : ""}
+        </header>
+        <div class="hero">
+          <div>
+            <div class="eyebrow">${esc(b.category)}${b.address?.city ? " · " + esc(b.address.city) : ""}</div>
+            <h1>${esc(b.name)}</h1>
+            <p>${esc(b.description || `Ask the chat assistant about our ${d.labels.catalogItem.toLowerCase()}s, timings and branches.`)}${openLine ? ` ${esc(openLine)}.` : ""}</p>
+            ${b.website ? `<p class="muted"><a href="${esc(b.website)}" target="_blank" rel="noreferrer">${esc(b.website)}</a></p>` : ""}
+          </div>
+          <div class="img">${b.logoUrl ? `<img src="${esc(b.logoUrl)}" alt="" />` : ""}</div>
+        </div>
+        ${d.groups.length ? `<section id="catalog"><h2>${esc(d.labels.catalogGroup)}s</h2><p class="note">The chat assistant quotes the same names and prices.</p><div class="grid">${d.groups.filter((g) => g.items.length).map((g) => `<div class="card"><h3>${esc(g.name)}</h3>${g.items.map((i) => `<div class="row"><span>${i.imageUrl ? `<img src="${esc(i.imageUrl)}" alt="" />` : ""}${esc(i.name)}${i.description ? `<small>${esc(i.description)}</small>` : ""}</span><b>${money(i.price)}</b></div>`).join("")}</div>`).join("")}</div></section>` : ""}
+        ${d.staff.length ? `<section id="staff"><h2>${esc(d.labels.staff)}</h2><div class="grid">${d.staff.map((s) => `<div class="card"><h3>${esc(s.name)}</h3><p class="muted">${esc([s.title, s.specialty].filter(Boolean).join(" · "))}${s.fee ? ` · fee ${money(s.fee)}` : ""}</p><p class="muted">${(s.availability || []).map((a) => `${DAYS[a.day]} ${a.start}–${a.end}`).join(" · ") || "Availability on request"}</p></div>`).join("")}</div></section>` : ""}
+        ${d.branches.length ? `<section id="branches"><h2>Branches</h2><div class="grid">${d.branches.map((x) => { const h = x.hours?.find((q) => q.day === today); return `<div class="card"><h3>${esc(x.name)}${x.isMain ? " · Main" : ""}</h3><p class="muted">${esc(addr(x.address)) || "Address on request"}</p><p class="muted">${x.phone ? esc(x.phone) + " · " : ""}${h ? (h.closed ? "Closed today" : `Today ${h.open}–${h.close}`) : "Hours on request"}</p></div>`; }).join("")}</div></section>` : ""}
+        ${areas.length ? `<section class="zones"><h2>Delivery areas</h2>${areas.map((a) => `<span>${esc(a)}</span>`).join("")}</section>` : ""}
+        <footer id="contact">${[b.phone, b.email, addr(b.address)].filter(Boolean).map(esc).join(" · ") || esc(b.name)}</footer>`;
+    })();
   </script>
   <script type="module" src="/src/embed.ts" data-api="http://localhost:4000"></script>
 </body>

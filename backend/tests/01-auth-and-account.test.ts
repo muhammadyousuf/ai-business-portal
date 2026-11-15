@@ -17,8 +17,18 @@ describe("client signup and account", () => {
     expect(o.org.uuid).toMatch(/^[0-9a-f-]{36}$/); expect(o.org.widgetKey).toMatch(/^wk_/);
     const me = await api.get("/v1/me").set(bearer(o.token)); expect(me.status).toBe(200); expect(me.body.user.email).toBe(o.email);
     const orgs = await api.get("/v1/me/organizations").set(bearer(o.token)); expect(orgs.body.items[0].role).toBe("owner"); expect(orgs.body.items[0].category.modules).toContain("orders");
-    const branches = await api.get(`/v1/orgs/${o.org.uuid}/branches`).set(bearer(o.token)); expect(branches.body.items).toHaveLength(1); expect(branches.body.items[0].isMain).toBe(true);
+    const branches = await api.get(`/v1/orgs/${o.org.uuid}/branches`).set(bearer(o.token)); expect(branches.body.items).toHaveLength(0); // no placeholder branch: the owner adds real ones
     const cfg = await api.get(`/v1/orgs/${o.org.uuid}/chatbot`).set(bearer(o.token)); expect(cfg.body.config.greeting).toContain("Kababjees");
+  });
+  it("issues a 6-digit email verification code at signup and verifies it", async () => {
+    const o = await signupOrg();
+    expect(o.verification?.devCode).toMatch(/^\d{6}$/); // tests run without email delivery, so the code is returned
+    const me0 = await api.get("/v1/me").set(bearer(o.token)); expect(me0.body.user.emailVerifiedAt).toBeUndefined(); expect(me0.body.user.emailVerification).toBeUndefined(); // hash never leaves the server
+    expect((await api.post("/v1/me/verify-email").set(bearer(o.token)).send({ code: "12" })).status).toBe(400);
+    const wrong = await api.post("/v1/me/verify-email").set(bearer(o.token)).send({ code: o.verification.devCode === "000000" ? "000001" : "000000" }); expect(wrong.status).toBe(400);
+    expect((await api.post("/v1/me/verify-email/resend").set(bearer(o.token))).status).toBe(429); // one code per minute
+    const ok = await api.post("/v1/me/verify-email").set(bearer(o.token)).send({ code: o.verification.devCode }); expect(ok.status).toBe(200); expect(ok.body.user.emailVerifiedAt).toBeTruthy();
+    const again = await api.post("/v1/me/verify-email/resend").set(bearer(o.token)); expect(again.body.alreadyVerified).toBe(true);
   });
   it("rejects duplicate signup emails", async () => {
     const o = await signupOrg(); const dup = await api.post("/v1/auth/signup").send({ email: o.email, password: PASSWORD, name: "Dup", orgName: "Dup Org", categoryKey: "salon" }); expect(dup.status).toBe(409);

@@ -1,4 +1,4 @@
-import { Branch, Category, ChatbotConfig, Membership, Organization, type UserDoc } from "../models/index.js";
+import { Category, ChatbotConfig, Membership, Organization, type UserDoc } from "../models/index.js";
 import { badRequest } from "../lib/http-error.js";
 import { slugify, uuid, widgetKey } from "../lib/tokens.js";
 import { logActivity, userActor } from "./activity.js";
@@ -14,7 +14,6 @@ export async function createOrganizationForUser(user: UserDoc, input: { name: st
     phone: input.phone ?? "", email: user.email, address: { city: input.city ?? "", country: input.country ?? "Pakistan" },
   });
   await Membership.create({ orgId: org.uuid, userId: String(user._id), role: "owner" });
-  await Branch.create({ orgId: org.uuid, name: "Main branch", isMain: true, phone: input.phone ?? "", address: { city: input.city ?? "", country: input.country ?? "Pakistan" } });
   await ChatbotConfig.create({ orgId: org.uuid, name: `${org.name} assistant`, greeting: `Hi! Welcome to ${org.name}. How can I help you today?` });
   await logActivity({ orgId: org.uuid, actor: userActor(user), action: "org.created", targetType: "organization", targetId: org.uuid, summary: `${user.name || user.email} created the organization ${org.name} (${category.name})` });
   await notifyAdmins({ type: "org.created", title: `New organization: ${org.name}`, body: `${category.name} · owner ${user.email}`, link: `/organizations/${org.uuid}`, orgId: org.uuid });

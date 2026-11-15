@@ -11,8 +11,10 @@ import { cn, relativeTime } from "@assistflow/shared/lib/utils";
 
 export function NotificationsPage({ base, linkPrefix = "" }: { base: "/v1/me" | "/v1/admin"; linkPrefix?: string }) {
   const { data, loading, refetch } = useApi<{ items: { id: string; title: string; body: string; link: string; readAt?: string; createdAt: string }[]; unread: number }>(`${base}/notifications?limit=50`);
-  async function markRead(id: string) { await api.patch(`${base}/notifications/${id}/read`); await refetch(); }
-  async function readAll() { await api.post(`${base}/notifications/read-all`); await refetch(); }
+  // The app shell listens for this so the bell badge updates without a navigation.
+  const changed = () => window.dispatchEvent(new Event("assistflow:notifications-changed"));
+  async function markRead(id: string) { await api.patch(`${base}/notifications/${id}/read`); await refetch(); changed(); }
+  async function readAll() { await api.post(`${base}/notifications/read-all`); await refetch(); changed(); }
   return (
     <>
       <PageHeader title="Notifications" description={data ? `${data.unread} unread` : undefined} actions={<Button size="sm" variant="outline" onClick={readAll} disabled={!data?.unread}><CheckCheck /> Mark all read</Button>} />

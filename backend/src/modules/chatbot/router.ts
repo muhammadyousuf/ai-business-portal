@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { normalize } from "../../lib/text.js";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import { wrap } from "../../lib/async.js";
@@ -29,7 +30,7 @@ chatbotRouter.get("/embed", wrap(async (req, res) => {
 }));
 
 // ----- Q&A -----
-const qaBody = z.object({ question: z.string().trim().min(3).max(300), answer: z.string().trim().min(1).max(2000), keywords: z.array(z.string().trim().min(1).max(40)).max(20).optional(), branchId: z.string().optional().or(z.literal("")), isActive: z.boolean().optional() });
+const qaBody = z.object({ question: z.string().trim().min(3).max(300), answer: z.string().trim().min(1).max(2000), keywords: z.array(z.string().trim().min(1).max(40)).max(20).optional(), branchId: z.string().optional().or(z.literal("")), isActive: z.boolean().optional(), unansweredId: z.string().max(40).optional() });
 
 chatbotRouter.get("/qas", validate({ query: z.object({ q: z.string().max(100).optional() }) }), wrap(async (req, res) => {
   const { q } = req.query as { q?: string };
@@ -38,8 +39,12 @@ chatbotRouter.get("/qas", validate({ query: z.object({ q: z.string().max(100).op
 }));
 chatbotRouter.post("/qas", validate({ body: qaBody }), wrap(async (req, res) => {
   if (req.body.branchId && !(await Branch.exists({ _id: req.body.branchId, orgId: req.org!.uuid }))) return res.status(400).json({ error: "Unknown branch" });
-  const qa = await ChatbotQa.create({ ...req.body, orgId: req.org!.uuid });
-  await UnansweredQuestion.updateMany({ orgId: req.org!.uuid, normalized: qa.question.toLowerCase() }, { $set: { resolvedQaId: String(qa._id) } });
+  const { unansweredId, ...body } = req.body as typeof req.body & { unansweredId?: string };
+  const qa = await ChatbotQa.create({ ...body, orgId: req.org!.uuid });
+  // Clear the gap this answer came from (and any identical wording) so the Unanswered tab stays actionable.
+  const resolved: Record<string, unknown>[] = [{ normalized: normalize(qa.question).slice(0, 200) }];
+  if (unansweredId) resolved.push({ _id: unansweredId });
+  await UnansweredQuestion.updateMany({ orgId: req.org!.uuid, $or: resolved }, { $set: { resolvedQaId: String(qa._id) } });
   await logActivity({ orgId: req.org!.uuid, actor: userActor(req.user!), action: "chatbot.qa_created", targetType: "qa", targetId: String(qa._id), summary: `${req.user!.name || req.user!.email} added Q&A: ${qa.question}` });
   res.status(201).json({ qa: qa.toJSON() });
 }));

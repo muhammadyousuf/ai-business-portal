@@ -44,7 +44,25 @@ export async function respond(org: OrganizationDoc, category: CategoryDoc | unde
     return { text: "Please share your name and phone number (and address for delivery), for example: Ali Raza, 0300 1234567, House 12, Street 4.", needsContact: true };
   }
 
-  // 3. Configured Q&A
+  // 3. Catalog items mentioned in the message (checked before the FAQ so "I want 2 Zinger Burgers" is an order, not an FAQ hit)
+  const items = modules.has("catalog") ? await CatalogItem.find({ orgId: org.uuid, isAvailable: true }).lean() : [];
+  const groups = modules.has("catalog") ? await CatalogGroup.find({ orgId: org.uuid, isActive: true }).lean() : [];
+  const matchItems = matchCatalogItems(text, items);
+
+  const branches = modules.has("branches") ? await Branch.find({ orgId: org.uuid, isActive: true }).lean() : [];
+  // 4. Order intent (restaurant-like)
+  if (modules.has("orders") && matchItems.length && (/\b\d+\b/.test(text) || has("order", "want", "chahiye", "send", "deliver"))) {
+    const cart = matchItems.map((it) => ({ itemId: String(it._id), name: it.name, qty: quantityFor(text, it.name), unitPrice: it.price }));
+    const subtotal = cart.reduce((t, i) => t + i.qty * i.unitPrice, 0);
+    const main = branches.find((b) => b.isMain) ?? branches[0];
+    const delivery = main?.deliveryCharge ?? 0;
+    conv.botState = { pending: { kind: "order", payload: { cart, subtotal, delivery, branchId: main ? String(main._id) : undefined } } };
+    const summary = cart.map((c) => `${c.qty} × ${c.name} (${money(c.qty * c.unitPrice, org.currency)})`).join(", ");
+    if (!conv.customer.name || !conv.customer.phone) return { text: `Got it: ${summary}. Total ${money(subtotal + delivery, org.currency)}${delivery ? ` including ${money(delivery, org.currency)} delivery` : ""}. Please share your name, phone number and address.`, tool: "createOrderRequest", needsContact: true };
+    return finalizePending();
+  }
+
+  // 5. Configured Q&A
   const qas = await ChatbotQa.find({ orgId: org.uuid, isActive: true, ...(conv.branchId ? { $or: [{ branchId: conv.branchId }, { branchId: { $in: ["", null] } }] } : {}) }).lean();
   const match = bestQa(raw, qas.map((q) => ({ id: String(q._id), question: q.question, answer: q.answer, keywords: q.keywords })));
   if (match) {
@@ -53,28 +71,11 @@ export async function respond(org: OrganizationDoc, category: CategoryDoc | unde
     return { text: match.qa.answer, tool: "answerFromQa", quickReplies: suggestions() };
   }
 
-  // 4. Category intents
-  const branches = modules.has("branches") ? await Branch.find({ orgId: org.uuid, isActive: true }).lean() : [];
+  // 6. Category intents
   if (modules.has("branches") && branches.length && has("where", "address", "location", "branch", "timing", "timings", "hours", "open", "close", "kahan")) {
     conv.fallbackStreak = 0;
     const lines = branches.map((b) => { const a = [b.address?.line1, b.address?.city].filter(Boolean).join(", "); const today = b.hours?.find((h) => h.day === new Date().getDay()); const hrs = today ? (today.closed ? "closed today" : `today ${today.open}–${today.close}`) : ""; return `${b.name}${a ? ": " + a : ""}${b.phone ? " · " + b.phone : ""}${hrs ? " · " + hrs : ""}`; });
     return { text: (branches.length > 1 ? "Our branches:\n" : "") + lines.join("\n"), tool: "getBranches" };
-  }
-
-  const items = modules.has("catalog") ? await CatalogItem.find({ orgId: org.uuid, isAvailable: true }).lean() : [];
-  const groups = modules.has("catalog") ? await CatalogGroup.find({ orgId: org.uuid, isActive: true }).lean() : [];
-  const matchItems = items.filter((it) => { const n = normalize(it.name); return n && (text.includes(n) || tokens(it.name).some((t) => t.length > 3 && text.includes(t))); });
-
-  // Order intent (restaurant-like)
-  if (modules.has("orders") && matchItems.length && (/\b\d+\b/.test(text) || has("order", "want", "chahiye", "send", "deliver"))) {
-    const cart = matchItems.map((it) => { const m = text.match(new RegExp(`(\\d+)\\s*(x|×|plates?|pcs?|of)?\\s*${normalize(it.name).split(" ")[0]}`)) ?? text.match(new RegExp(`${normalize(it.name).split(" ")[0]}\\s*(x|×)?\\s*(\\d+)`)); const qty = Number(m?.[1] ?? m?.[2] ?? 1) || 1; return { itemId: String(it._id), name: it.name, qty, unitPrice: it.price }; });
-    const subtotal = cart.reduce((t, i) => t + i.qty * i.unitPrice, 0);
-    const main = branches.find((b) => b.isMain) ?? branches[0];
-    const delivery = main?.deliveryCharge ?? 0;
-    conv.botState = { pending: { kind: "order", payload: { cart, subtotal, delivery, branchId: main ? String(main._id) : undefined } } };
-    const summary = cart.map((c) => `${c.qty} × ${c.name} (${money(c.qty * c.unitPrice, org.currency)})`).join(", ");
-    if (!conv.customer.name || !conv.customer.phone) return { text: `Got it: ${summary}. Total ${money(subtotal + delivery, org.currency)}${delivery ? ` including ${money(delivery, org.currency)} delivery` : ""}. Please share your name, phone number and address.`, tool: "createOrderRequest", needsContact: true };
-    return finalizePending();
   }
 
   // Appointment intent
@@ -150,4 +151,26 @@ export async function respond(org: OrganizationDoc, category: CategoryDoc | unde
     await notifyOrg(org.uuid, { type: "inquiry.new", title: `New ${pl.type} inquiry #${number}`, body: `${conv.customer.name} · ${pl.subject}`, link: link("inquiries", String(i._id)) }, "appointments");
     return { text: `Thanks ${conv.customer.name}. Your ${pl.type} inquiry #${number} is logged. The team will reach you on ${conv.customer.phone}.`, tool: "createInquiry", created: { kind: "inquiry", id: String(i._id), number } };
   }
+}
+
+// Items whose full name appears in the message win. Only when none does, fall back to distinctive tokens
+// (a token shared by several items, such as "burger" or "combo", never matches on its own).
+export function matchCatalogItems<T extends { name: string }>(text: string, items: T[]): T[] {
+  const padded = ` ${text} `;
+  const full = items.filter((it) => { const n = normalize(it.name); return n && (padded.includes(` ${n} `) || padded.includes(` ${n}s `)); });
+  if (full.length) {
+    // "krunch burger" is contained in "krunch burger drink": keep only the longest name that actually appears.
+    return full.filter((a) => !full.some((b) => b !== a && normalize(b.name).includes(normalize(a.name)) && normalize(b.name) !== normalize(a.name)));
+  }
+  const freq = new Map<string, number>();
+  for (const it of items) for (const t of new Set(tokens(it.name))) freq.set(t, (freq.get(t) ?? 0) + 1);
+  const words = new Set(tokens(text).map(singular));
+  return items.filter((it) => tokens(it.name).some((t) => t.length > 3 && (freq.get(t) ?? 0) <= 2 && words.has(singular(t))));
+}
+const singular = (w: string) => (w.length > 4 && w.endsWith("s") ? w.slice(0, -1) : w);
+export function quantityFor(text: string, name: string) {
+  const n = normalize(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = text.match(new RegExp(`(\\d+)\\s*(x|×|pcs?|pieces?|of)?\\s*${n}`)) ?? text.match(new RegExp(`${n}s?\\s*(x|×)?\\s*(\\d+)`));
+  const q = Number(m?.[1] ?? m?.[2] ?? 1);
+  return Number.isFinite(q) && q > 0 && q < 100 ? q : 1;
 }

@@ -6,10 +6,11 @@ import { pageQuery, paged, skip } from "../../lib/pagination.js";
 import { toJSONList } from "../../lib/serialize.js";
 import { imageUpload } from "../../middleware/upload.js";
 import { uploadLimiter } from "../../middleware/rate-limit.js";
-import { Category, Membership, NOTIFICATION_PREF_KEYS, Notification, Organization } from "../../models/index.js";
+import { Category, Membership, NOTIFICATION_PREF_KEYS, Notification, Organization, User } from "../../models/index.js";
 import { saveUpload } from "../../services/files.js";
 import { setPassword, verifyPassword } from "../../services/supabase-admin.js";
 import { publicOrg } from "../../services/orgs.js";
+import { issueVerification, verifyEmailCode } from "../../services/verification.js";
 
 // Everything under /v1/me assumes requireJwt + requireUser ran.
 export const meRouter = Router();
@@ -36,6 +37,18 @@ meRouter.post("/change-password", validate({ body: z.object({ currentPassword: z
   await verifyPassword(req.user!.email, req.body.currentPassword);
   await setPassword(req.auth!.sub, req.body.newPassword);
   res.json({ ok: true });
+}));
+
+meRouter.post("/verify-email", validate({ body: z.object({ code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code") }) }), wrap(async (req, res) => {
+  const r = await verifyEmailCode(String(req.user!._id), req.body.code);
+  const user = await User.findById(req.user!._id);
+  res.json({ ok: true, ...r, user: user?.toJSON() });
+}));
+meRouter.post("/verify-email/resend", wrap(async (req, res) => {
+  if (req.user!.emailVerifiedAt) return res.json({ ok: true, alreadyVerified: true });
+  const ms = await Membership.findOne({ userId: String(req.user!._id), role: "owner" }).lean();
+  const org = ms ? await Organization.findOne({ uuid: ms.orgId }, { name: 1 }).lean() : null;
+  res.json({ ok: true, ...(await issueVerification(req.user!, org?.name)) });
 }));
 
 meRouter.get("/organizations", wrap(async (req, res) => {

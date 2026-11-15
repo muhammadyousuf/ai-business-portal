@@ -2,7 +2,7 @@
   "name": "@assistflow/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Design system (tokens, primitives, layout), utils, status maps, domain types and temporary mock fixtures shared by the admin and user apps.",
+  "description": "Design system (tokens, primitives, layout), utils, status maps and domain helpers shared by the admin and user apps.",
   "type": "module",
   "exports": {
     "./ui/*": "./src/ui/*.tsx",
@@ -10,7 +10,6 @@
     "./layout/*": "./src/layout/*.tsx",
     "./dashboard/*": "./src/dashboard/*.tsx",
     "./lib/*": "./src/lib/*.ts",
-    "./mock/*": "./src/mock/*.ts",
     "./styles/*": "./src/styles/*",
     "./api/*": "./src/api/*.ts"
   },
